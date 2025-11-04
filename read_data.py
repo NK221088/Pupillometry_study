@@ -101,6 +101,14 @@ patient_left_SECONDS_metrics = df = pd.concat([
     patient_left_text_data[sheet_name].loc["SECONDS"] 
     for sheet_name in patient_left_data.keys()
 ], axis=1, keys=patient_left_data.keys())
+SECONDS_conversion_dict = {
+"C": 0,
+"U": 1,
+"M-": 2,
+"M+": 3,
+"E": 4
+}
+patient_left_SECONDS_metrics = patient_left_SECONDS_metrics.replace(SECONDS_conversion_dict)
 
 patient_right_GCS_metrics = df = pd.concat([
     patient_right_text_data[sheet_name].loc["GCS"] 

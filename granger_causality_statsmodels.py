@@ -7,9 +7,9 @@ import numpy as np
 import pandas as pd
 import seaborn as sns
 
-from read_data import (patient_left_FOUR_metrics, patient_left_GCS_metrics, patient_left_first_50_metrics, patient_left_second_50_metrics, patient_left_LOR_late_gradient_metrics)
+from read_data import (patient_left_FOUR_metrics, patient_left_GCS_metrics, patient_left_SECONDS_metrics, patient_left_first_50_metrics, patient_left_second_50_metrics, patient_left_LOR_late_gradient_metrics)
 
-wakefullness_metric = "patient_left_GCS_metrics" # "patient_left_FOUR_metrics" 
+wakefullness_metric = "patient_left_SECONDS_metrics" # "patient_left_GCS_metrics" # "patient_left_FOUR_metrics" 
 
 if wakefullness_metric == "patient_left_FOUR_metrics":
     patient_left_scores = {}
@@ -17,12 +17,16 @@ if wakefullness_metric == "patient_left_FOUR_metrics":
         patient_left_scores[index] = np.vstack([patient_left_FOUR_metrics.loc[index].dropna(), patient_left_LOR_late_gradient_metrics.loc[index].dropna()])
         patient_left_scores[index] = patient_left_scores[index].astype(np.float64)
 
-else:
+elif wakefullness_metric == "patient_left_GCS_metrics":
     patient_left_scores = {}
     for index in patient_left_GCS_metrics.index:
         patient_left_scores[index] = np.vstack([patient_left_GCS_metrics.loc[index].dropna(), patient_left_LOR_late_gradient_metrics.loc[index].dropna()])
         patient_left_scores[index] = patient_left_scores[index].astype(np.float64)
-
+else:
+    patient_left_scores = {}
+    for index in patient_left_SECONDS_metrics.index:
+        patient_left_scores[index] = np.vstack([patient_left_SECONDS_metrics.loc[index].dropna(), patient_left_LOR_late_gradient_metrics.loc[index].dropna()])
+        patient_left_scores[index] = patient_left_scores[index].astype(np.float64)
 
 mock_scores = {}
 mock_indices = np.arange(1,101,1)
@@ -30,7 +34,7 @@ for index in mock_indices:
     mock_scores[index] = np.vstack([np.random.randint(1, 13, size=(1, 10)), np.random.rand(1, 10)])
 
 granger_results = []
-max_lag = 2
+max_lag = 1
 for subject, subject_scores in patient_left_scores.items():
     
     if subject_scores.shape[1] <= (3 * max_lag + 1): # 3 * maxlag + 1 (constant term)
@@ -47,9 +51,17 @@ for subject, subject_scores in patient_left_scores.items():
     if var_four == 0 or var_gradient == 0:
         print(f"Skipping {subject}: Zero variance for at least one parameter")
         continue
-
-    FOUR_FOUR_model = AutoReg(FOUR_score, lags=max_lag).fit()
-    gradient_to_FOUR_model = grangercausalitytests(np.column_stack([FOUR_score, gradient]), maxlag=max_lag)
+    
+    if len(np.unique(FOUR_score[:-max_lag])) == 1:
+        print(f"Skipping {subject}: Constant values when considering lag")
+        continue 
+    
+    try:
+        FOUR_FOUR_model = AutoReg(FOUR_score, lags=max_lag).fit()
+        gradient_to_FOUR_model = grangercausalitytests(np.column_stack([FOUR_score, gradient]), maxlag=max_lag)
+    except Exception as e:
+        print(f"Skipping {subject}: Infeasible test - {e}")
+        continue
     
     granger_results.append({
         "Subject ID": subject,
@@ -64,10 +76,10 @@ number_of_overlapping_patients = len(list(
     set(df_results[df_results["Gradient to FOUR"] < 0.05].index) &
     set(df_results[df_results["FOUR to FOUR"] < 0.05].index)
 ))
-df_results_summarized = pd.concat([df_results[df_results["FOUR to FOUR"] < 0.05][:5], df_results[df_results["Gradient to FOUR"] < 0.05]]).reset_index().drop_duplicates(subset='Subject ID').set_index('Subject ID')
+df_results_summarized = pd.concat([df_results[df_results["FOUR to FOUR"] < 0.05][:7], df_results[df_results["Gradient to FOUR"] < 0.05]]).reset_index().drop_duplicates(subset='Subject ID').set_index('Subject ID')
 
 sns.set_style("whitegrid")
-col_size = 2
+col_size = 4
 fig, ax = plt.subplots(3, col_size, figsize=(30, 12))
 plt.subplots_adjust(hspace=0.4, wspace=0.3)
 
