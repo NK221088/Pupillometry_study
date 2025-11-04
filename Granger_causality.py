@@ -3,6 +3,8 @@ import nitime.timeseries as ts
 import nitime.analysis as nta
 import numpy as np
 import pandas as pd
+import seaborn as sns
+
 from read_data import (patient_left_FOUR_metrics, patient_left_first_50_metrics, patient_left_second_50_metrics, patient_left_LOR_late_gradient_metrics)
 
 patient_left_scores = {}
@@ -47,10 +49,25 @@ df_results = pd.DataFrame(granger_results)
 df_results.set_index("Subject ID", inplace=True)
 print(df_results)
 
-fig, ax = plt.subplots(3, 4, figsize=(30, 10))
+sns.set_style("whitegrid")
+fig, ax = plt.subplots(3, 4, figsize=(30, 12))
+plt.subplots_adjust(hspace=0.4, wspace=0.3)
+
 for idx, index in enumerate(df_results.index[:12]):
     row = idx // 4
     col = idx % 4
     Causalities = df_results.loc[index].tolist()
-    ax[row, col].bar(list(df_results.columns), Causalities)
+    for i, (label, value) in enumerate(zip(df_results.columns, Causalities)):
+        ax[row, col].hlines(
+            y=value, 
+            xmin=i-0.3,  # Start of line
+            xmax=i+0.3,  # End of line
+            colors='steelblue', 
+            linewidth=4,
+            alpha=0.7
+        )
+    ax[row, col].set_title(f"Subject {index}", fontsize=14, fontweight='bold', pad=10)
+
+plt.tight_layout()
+plt.show()
 print("test")
