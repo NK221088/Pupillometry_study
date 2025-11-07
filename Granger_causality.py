@@ -38,21 +38,15 @@ for subject, subject_scores in patient_left_scores.items():
 
     gradient_FOUR_score = np.vstack([gradient, FOUR_score])
     time_series_gradient_FOUR = ts.TimeSeries(gradient_FOUR_score, sampling_interval=24, time_unit="h")
-    granger_gradient_FOUR = nta.GrangerAnalyzer(time_series_gradient_FOUR, order=1)
+    granger_gradient_FOUR = nta.GrangerAnalyzer(time_series_gradient_FOUR, order=1, n_freqs=1)
     gradient_to_FOUR = granger_gradient_FOUR.causality_xy[0, 1, :]
     
-    FOUR_only = np.vstack([FOUR_score, FOUR_score])
-    time_series_FOUR = ts.TimeSeries(FOUR_only, sampling_interval=24, time_unit="h")
-    granger_FOUR = nta.GrangerAnalyzer(time_series_FOUR, order=1)
-    FOUR_to_FOUR = granger_gradient_FOUR.causality_xy[0, 1, :]
-    
-    if np.isnan(np.mean(FOUR_to_FOUR)) or np.isnan(np.mean(gradient_to_FOUR)):
-        print(f"Skipping {subject}: Either Granger causalities are np.nan.")
+    if np.isnan(np.mean(gradient_to_FOUR)):
+        print(f"Skipping {subject}: Granger causalities is np.nan.")
         continue
     
     granger_results.append({
         "Subject ID": subject,
-        "FOUR to FOUR": FOUR_to_FOUR,
         "Gradient to FOUR": gradient_to_FOUR
     })
         
@@ -68,20 +62,18 @@ for idx, index in enumerate(df_results.index[:12]):
     row = idx // 4
     col = idx % 4
     
-    caus_xy = df_results.loc[index].values[0]
-    caus_yx = df_results.loc[index].values[1]
+    gradient_to_FOUR = df_results.loc[index].values[0]
     
     plotting_df = pd.DataFrame({
-        "Granger Causality values": np.concatenate([caus_xy, caus_yx]),
-        "Metric": (["FOUR → LOR Late Gradient"] * len(caus_xy)) +
-                  (["LOR Late Gradient → FOUR"] * len(caus_yx))
+        "Granger Causality values": gradient_to_FOUR,
+        "Metric": "LOR Late Gradient → FOUR"
     })
     
     sns.boxplot(x="Metric", y="Granger Causality values", data=plotting_df, ax=ax[row, col])
     
     ax[row, col].set_title(f"Subject {index}")
     ax[row, col].set_ylabel("Granger Causality")
-    ax[row, col].tick_params(axis='x', rotation=15)
+    ax[row, col].tick_params(axis='x')
 
     if row < 2:  # since 0-indexed rows → bottom row = row 2
         ax[row, col].set_xlabel("")
