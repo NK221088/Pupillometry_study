@@ -5,6 +5,7 @@ import statsmodels.api as sm
 from statsmodels.miscmodels.ordinal_model import OrderedModel
 import numpy as np
 import os
+import pandas as pd
 
 from read_data import (
     patient_left_first_50_metrics,
@@ -74,7 +75,7 @@ for idx_left, idx_right in zip(patient_left_first_50_metrics.index, patient_righ
         distr="logit"
         )
     else:
-        patient_left_model_first_50_0_lag = None
+        patient_left_model_first_50_0_lag = np.nan
     if len(np.unique(patient_left_FOUR_metrics.loc[idx_left].dropna().values.astype(float)[:longest_length_left][:-1])) >= 2 & len(np.unique(patient_left_first_50_metrics.loc[idx_left].dropna().values.astype(float)[:longest_length_left][1:])) >= 2:
         patient_left_model_first_50_1_lag = OrderedModel(
         endog=patient_left_FOUR_metrics.loc[idx_left].dropna().values.astype(float)[:longest_length_left][:-1],
@@ -82,7 +83,7 @@ for idx_left, idx_right in zip(patient_left_first_50_metrics.index, patient_righ
         distr="logit"
         )
     else:
-        patient_left_model_first_50_1_lag = None
+        patient_left_model_first_50_1_lag = np.nan
     if len(np.unique(patient_left_FOUR_metrics.loc[idx_left].dropna().values.astype(float)[:longest_length_left][:-2])) >= 2 & len(np.unique(patient_left_first_50_metrics.loc[idx_left].dropna().values.astype(float)[:longest_length_left][2:])) >= 2:
         patient_left_model_first_50_2_lag = OrderedModel(
         endog=patient_left_FOUR_metrics.loc[idx_left].dropna().values.astype(float)[:longest_length_left][:-2],
@@ -90,10 +91,10 @@ for idx_left, idx_right in zip(patient_left_first_50_metrics.index, patient_righ
         distr="logit"
         )
     else:
-        patient_left_model_first_50_2_lag = None
-    patient_left_model_res_first_50_0_lag = patient_left_model_first_50_0_lag.fit(method='bfgs') if patient_left_model_first_50_0_lag is not None else None
-    patient_left_model_res_first_50_1_lag = patient_left_model_first_50_1_lag.fit(method='bfgs') if patient_left_model_first_50_1_lag is not None else None
-    patient_left_model_res_first_50_2_lag = patient_left_model_first_50_2_lag.fit(method='bfgs') if patient_left_model_first_50_2_lag is not None else None
+        patient_left_model_first_50_2_lag = np.nan
+    patient_left_model_res_first_50_0_lag = patient_left_model_first_50_0_lag.fit(method='bfgs') if patient_left_model_first_50_0_lag is not np.nan else np.nan
+    patient_left_model_res_first_50_1_lag = patient_left_model_first_50_1_lag.fit(method='bfgs') if patient_left_model_first_50_1_lag is not np.nan else np.nan
+    patient_left_model_res_first_50_2_lag = patient_left_model_first_50_2_lag.fit(method='bfgs') if patient_left_model_first_50_2_lag is not np.nan else np.nan
     patient_left_first_50_model_results = [patient_left_model_res_first_50_0_lag, patient_left_model_res_first_50_1_lag, patient_left_model_res_first_50_2_lag]
     
     axs[0][1].scatter(patient_left_second_50_metrics.loc[idx_left].dropna().values.astype(float)[:longest_length_left], patient_left_GCS_metrics.loc[idx_left].dropna().values.astype(float)[:longest_length_left], color="blue", marker="o", label="Left, GCS")
@@ -126,7 +127,7 @@ for idx_left, idx_right in zip(patient_left_first_50_metrics.index, patient_righ
         distr="logit"
         )
     else:
-        patient_left_model_second_50_0_lag = None
+        patient_left_model_second_50_0_lag = np.nan
     if len(np.unique(patient_left_FOUR_metrics.loc[idx_left].dropna().values.astype(float)[:longest_length_left][:-1])) >= 2 & len(np.unique(patient_left_second_50_metrics.loc[idx_left].dropna().values.astype(float)[:longest_length_left][1:])) >= 2:
         patient_left_model_second_50_1_lag = OrderedModel(
         endog=patient_left_FOUR_metrics.loc[idx_left].dropna().values.astype(float)[:longest_length_left][:-1],
@@ -134,7 +135,7 @@ for idx_left, idx_right in zip(patient_left_first_50_metrics.index, patient_righ
         distr="logit"
         )
     else:
-        patient_left_model_second_50_1_lag = None
+        patient_left_model_second_50_1_lag = np.nan
     if len(np.unique(patient_left_FOUR_metrics.loc[idx_left].dropna().values.astype(float)[:longest_length_left][:-2])) >= 2 & len(np.unique(patient_left_second_50_metrics.loc[idx_left].dropna().values.astype(float)[:longest_length_left][2:])) >= 2:
         patient_left_model_second_50_2_lag = OrderedModel(
         endog=patient_left_FOUR_metrics.loc[idx_left].dropna().values.astype(float)[:longest_length_left][:-2],
@@ -142,10 +143,10 @@ for idx_left, idx_right in zip(patient_left_first_50_metrics.index, patient_righ
         distr="logit"
         )
     else:
-        patient_left_model_second_50_2_lag = None
-    patient_left_model_res_second_50_0_lag = patient_left_model_second_50_0_lag.fit(method='bfgs') if patient_left_model_second_50_0_lag is not None else None
-    patient_left_model_res_second_50_1_lag = patient_left_model_second_50_1_lag.fit(method='bfgs') if patient_left_model_second_50_1_lag is not None else None
-    patient_left_model_res_second_50_2_lag = patient_left_model_second_50_2_lag.fit(method='bfgs') if patient_left_model_second_50_2_lag is not None else None
+        patient_left_model_second_50_2_lag = np.nan
+    patient_left_model_res_second_50_0_lag = patient_left_model_second_50_0_lag.fit(method='bfgs') if patient_left_model_second_50_0_lag is not np.nan else np.nan
+    patient_left_model_res_second_50_1_lag = patient_left_model_second_50_1_lag.fit(method='bfgs') if patient_left_model_second_50_1_lag is not np.nan else np.nan
+    patient_left_model_res_second_50_2_lag = patient_left_model_second_50_2_lag.fit(method='bfgs') if patient_left_model_second_50_2_lag is not np.nan else np.nan
     patient_left_second_50_model_results = [patient_left_model_res_second_50_0_lag, patient_left_model_res_second_50_1_lag, patient_left_model_res_second_50_2_lag]
     
     axs[0][2].scatter(patient_left_LOR_late_gradient_metrics.loc[idx_left].dropna().values.astype(float)[:longest_length_left], patient_left_GCS_metrics.loc[idx_left].dropna().values.astype(float)[:longest_length_left], color="blue", marker="o", label="Left, GCS")
@@ -178,7 +179,7 @@ for idx_left, idx_right in zip(patient_left_first_50_metrics.index, patient_righ
         distr="logit"
         )
     else:
-        patient_left_model_LOR_late_gradient_0_lag = None
+        patient_left_model_LOR_late_gradient_0_lag = np.nan
     if len(np.unique(patient_left_FOUR_metrics.loc[idx_left].dropna().values.astype(float)[:longest_length_left][:-1])) >= 2 & len(np.unique(patient_left_LOR_late_gradient_metrics.loc[idx_left].dropna().values.astype(float)[:longest_length_left][1:])) >= 2:
         patient_left_model_LOR_late_gradient_1_lag = OrderedModel(
         endog=patient_left_FOUR_metrics.loc[idx_left].dropna().values.astype(float)[:longest_length_left][:-1],
@@ -186,7 +187,7 @@ for idx_left, idx_right in zip(patient_left_first_50_metrics.index, patient_righ
         distr="logit"
         )
     else:
-        patient_left_model_LOR_late_gradient_1_lag = None
+        patient_left_model_LOR_late_gradient_1_lag = np.nan
     if len(np.unique(patient_left_FOUR_metrics.loc[idx_left].dropna().values.astype(float)[:longest_length_left][:-2])) >= 2 & len(np.unique(patient_left_LOR_late_gradient_metrics.loc[idx_left].dropna().values.astype(float)[:longest_length_left][2:])) >= 2:
         patient_left_model_LOR_late_gradient_2_lag = OrderedModel(
         endog=patient_left_FOUR_metrics.loc[idx_left].dropna().values.astype(float)[:longest_length_left][:-2],
@@ -194,10 +195,10 @@ for idx_left, idx_right in zip(patient_left_first_50_metrics.index, patient_righ
         distr="logit"
         )
     else:
-        patient_left_model_LOR_late_gradient_2_lag = None
-    patient_left_model_res_LOR_late_gradient_0_lag = patient_left_model_LOR_late_gradient_0_lag.fit(method='bfgs') if patient_left_model_LOR_late_gradient_0_lag is not None else None
-    patient_left_mode_res_LOR_late_gradient_1_lag = patient_left_model_LOR_late_gradient_1_lag.fit(method='bfgs') if patient_left_model_LOR_late_gradient_1_lag is not None else None
-    patient_left_mode_res_LOR_late_gradient_2_lag = patient_left_model_LOR_late_gradient_2_lag.fit(method='bfgs') if patient_left_model_LOR_late_gradient_2_lag is not None else None
+        patient_left_model_LOR_late_gradient_2_lag = np.nan
+    patient_left_model_res_LOR_late_gradient_0_lag = patient_left_model_LOR_late_gradient_0_lag.fit(method='bfgs') if patient_left_model_LOR_late_gradient_0_lag is not np.nan else np.nan
+    patient_left_mode_res_LOR_late_gradient_1_lag = patient_left_model_LOR_late_gradient_1_lag.fit(method='bfgs') if patient_left_model_LOR_late_gradient_1_lag is not np.nan else np.nan
+    patient_left_mode_res_LOR_late_gradient_2_lag = patient_left_model_LOR_late_gradient_2_lag.fit(method='bfgs') if patient_left_model_LOR_late_gradient_2_lag is not np.nan else np.nan
     patient_left_LOR_late_gradient_model_results = [patient_left_model_res_LOR_late_gradient_0_lag, patient_left_mode_res_LOR_late_gradient_1_lag, patient_left_mode_res_LOR_late_gradient_2_lag]
     
     
@@ -224,7 +225,7 @@ for idx_left in patient_left_first_50_metrics.index:
         "Spearman_pvalue_first_50": [spearman_results_left[idx_left][0][i].pvalue for i in lag],
         "Spearman_pvalue_second_50": [spearman_results_left[idx_left][1][i].pvalue for i in lag],
         "Spearman_pvalue_LOR_late_gradient": [spearman_results_left[idx_left][2][i].pvalue for i in lag],
-    })
+    }).dropna()
 
     f, axes = plt.subplots(2, 3, figsize=(10, 6), sharex=True)
     f.subplots_adjust(hspace=0.3, wspace=0.3)
@@ -266,13 +267,13 @@ for idx_left in patient_left_first_50_metrics.index:
 
     df_model = pd.DataFrame({
         "Lag": lag,
-        "Model_slope_first_50": [model_results_left[idx_left][0][i].params[0] if model_results_left[idx_left][0][i] is not None else None for i in lag],
-        "Model_slope_second_50": [model_results_left[idx_left][1][i].params[0] if model_results_left[idx_left][1][i] is not None else None for i in lag],
-        "Model_slope_LOR_late_gradient": [model_results_left[idx_left][2][i].params[0] if model_results_left[idx_left][2][i] is not None else None for i in lag],
-        "Model_pvalue_first_50": [model_results_left[idx_left][0][i].pvalues[0] if model_results_left[idx_left][0][i] is not None else None for i in lag],
-        "Model_pvalue_second_50": [model_results_left[idx_left][1][i].pvalues[0] if model_results_left[idx_left][1][i] is not None else None for i in lag],
-        "Model_pvalue_LOR_late_gradient": [model_results_left[idx_left][2][i].pvalues[0] if model_results_left[idx_left][2][i] is not None else None for i in lag],
-    })
+        "Model_slope_first_50": [model_results_left[idx_left][0][i].params[0] if model_results_left[idx_left][0][i] is not np.nan else np.nan for i in lag],
+        "Model_slope_second_50": [model_results_left[idx_left][1][i].params[0] if model_results_left[idx_left][1][i] is not np.nan else np.nan for i in lag],
+        "Model_slope_LOR_late_gradient": [model_results_left[idx_left][2][i].params[0] if model_results_left[idx_left][2][i] is not np.nan else np.nan for i in lag],
+        "Model_pvalue_first_50": [model_results_left[idx_left][0][i].pvalues[0] if model_results_left[idx_left][0][i] is not np.nan else np.nan for i in lag],
+        "Model_pvalue_second_50": [model_results_left[idx_left][1][i].pvalues[0] if model_results_left[idx_left][1][i] is not np.nan else np.nan for i in lag],
+        "Model_pvalue_LOR_late_gradient": [model_results_left[idx_left][2][i].pvalues[0] if model_results_left[idx_left][2][i] is not np.nan else np.nan for i in lag],
+    }).dropna()
 
     f, axes = plt.subplots(2, 3, figsize=(10, 6), sharex=True)
     f.subplots_adjust(hspace=0.3, wspace=0.3)
