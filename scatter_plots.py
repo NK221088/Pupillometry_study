@@ -15,7 +15,8 @@ from read_data import (
     patient_left_FOUR_metrics,
     patient_right_GCS_metrics,
     patient_right_FOUR_metrics,
-    patient_left_LOR_late_gradient_metrics
+    patient_left_LOR_late_gradient_metrics,
+    patient_left_arousal_metrics
 )
 
 spearman_results_left = {}
@@ -29,7 +30,7 @@ for idx_left, idx_right in zip(patient_left_first_50_metrics.index, patient_righ
     
     print(f"Plotting subject {idx_left}/{patient_left_first_50_metrics.index[-1]}")
     
-    f, axs = plt.subplots(3, 3, figsize=(30, 10))
+    f, axs = plt.subplots(3, 4, figsize=(30, 10))
     f.suptitle(f"Subject {idx_left} — GCS/FOUR vs PLR Metrics", fontsize=18, fontweight='bold')
 
     # Row headers
@@ -41,6 +42,7 @@ for idx_left, idx_right in zip(patient_left_first_50_metrics.index, patient_righ
     axs[0][0].set_title("Time to reach 50% PLR (decrease)")
     axs[0][1].set_title("Time to reach 50% PLR (increase)")
     axs[0][2].set_title("LOR,Late Gradient")
+    axs[0][3].set_title("Arousal Gradient")
 
     longest_length_left = min([len(patient_left_first_50_metrics.loc[idx_left].dropna().values.astype(float)), len(patient_left_GCS_metrics.loc[idx_left].dropna().values.astype(float)), len(patient_left_FOUR_metrics.loc[idx_left].dropna().values.astype(float))])
     longest_length_right = min([len(patient_right_first_50_metrics.loc[idx_right].dropna().values.astype(float)), len(patient_right_GCS_metrics.loc[idx_right].dropna().values.astype(float)), len(patient_right_FOUR_metrics.loc[idx_right].dropna().values.astype(float))])
@@ -97,6 +99,8 @@ for idx_left, idx_right in zip(patient_left_first_50_metrics.index, patient_righ
     patient_left_model_res_first_50_2_lag = patient_left_model_first_50_2_lag.fit(method='bfgs') if patient_left_model_first_50_2_lag is not np.nan else np.nan
     patient_left_first_50_model_results = [patient_left_model_res_first_50_0_lag, patient_left_model_res_first_50_1_lag, patient_left_model_res_first_50_2_lag]
     
+    #######################################################################
+    
     axs[0][1].scatter(patient_left_second_50_metrics.loc[idx_left].dropna().values.astype(float)[:longest_length_left], patient_left_GCS_metrics.loc[idx_left].dropna().values.astype(float)[:longest_length_left], color="blue", marker="o", label="Left, GCS")
     axs[0][1].scatter(patient_left_second_50_metrics.loc[idx_left].dropna().values.astype(float)[:longest_length_left], patient_left_FOUR_metrics.loc[idx_left].dropna().values.astype(float)[:longest_length_left], color="red", marker="o", label="Left, FOUR")
     # axs[0][1].scatter(patient_right_second_50_metrics.loc[idx_right].dropna().values.astype(float)[:longest_length_right], patient_right_GCS_metrics.loc[idx_right].dropna().values.astype(float)[:longest_length_right], color="blue", marker="s", label="Right, GCS")
@@ -149,6 +153,8 @@ for idx_left, idx_right in zip(patient_left_first_50_metrics.index, patient_righ
     patient_left_model_res_second_50_2_lag = patient_left_model_second_50_2_lag.fit(method='bfgs') if patient_left_model_second_50_2_lag is not np.nan else np.nan
     patient_left_second_50_model_results = [patient_left_model_res_second_50_0_lag, patient_left_model_res_second_50_1_lag, patient_left_model_res_second_50_2_lag]
     
+    #######################################################################
+    
     axs[0][2].scatter(patient_left_LOR_late_gradient_metrics.loc[idx_left].dropna().values.astype(float)[:longest_length_left], patient_left_GCS_metrics.loc[idx_left].dropna().values.astype(float)[:longest_length_left], color="blue", marker="o", label="Left, GCS")
     axs[0][2].scatter(patient_left_LOR_late_gradient_metrics.loc[idx_left].dropna().values.astype(float)[:longest_length_left], patient_left_FOUR_metrics.loc[idx_left].dropna().values.astype(float)[:longest_length_left], color="red", marker="o", label="Left, FOUR")
     # axs[0][2].scatter(patient_right_LOR_late_gradient_metrics.loc[idx_right].dropna().values.astype(float)[:longest_length_right], patient_right_GCS_metrics.loc[idx_right].dropna().values.astype(float)[:longest_length_right], color="blue", marker="s", label="Right, GCS")
@@ -200,6 +206,60 @@ for idx_left, idx_right in zip(patient_left_first_50_metrics.index, patient_righ
     patient_left_mode_res_LOR_late_gradient_1_lag = patient_left_model_LOR_late_gradient_1_lag.fit(method='bfgs') if patient_left_model_LOR_late_gradient_1_lag is not np.nan else np.nan
     patient_left_mode_res_LOR_late_gradient_2_lag = patient_left_model_LOR_late_gradient_2_lag.fit(method='bfgs') if patient_left_model_LOR_late_gradient_2_lag is not np.nan else np.nan
     patient_left_LOR_late_gradient_model_results = [patient_left_model_res_LOR_late_gradient_0_lag, patient_left_mode_res_LOR_late_gradient_1_lag, patient_left_mode_res_LOR_late_gradient_2_lag]
+    
+    #######################################################################
+
+    axs[0][3].scatter(patient_left_arousal_metrics.loc[idx_left].dropna().values.astype(float)[:longest_length_left], patient_left_GCS_metrics.loc[idx_left].dropna().values.astype(float)[:longest_length_left], color="blue", marker="o", label="Left, GCS")
+    axs[0][3].scatter(patient_left_arousal_metrics.loc[idx_left].dropna().values.astype(float)[:longest_length_left], patient_left_FOUR_metrics.loc[idx_left].dropna().values.astype(float)[:longest_length_left], color="red", marker="o", label="Left, FOUR")
+    # axs[0][2].scatter(patient_right_LOR_late_gradient_metrics.loc[idx_right].dropna().values.astype(float)[:longest_length_right], patient_right_GCS_metrics.loc[idx_right].dropna().values.astype(float)[:longest_length_right], color="blue", marker="s", label="Right, GCS")
+    # axs[0][2].scatter(patient_right_LOR_late_gradient_metrics.loc[idx_right].dropna().values.astype(float)[:longest_length_right], patient_right_FOUR_metrics.loc[idx_right].dropna().values.astype(float)[:longest_length_right], color="red", marker="s", label="Right, FOUR")
+    axs[0][3].legend()
+
+    axs[1][3].scatter(patient_left_arousal_metrics.loc[idx_left].dropna().values.astype(float)[:longest_length_left][:-1], patient_left_GCS_metrics.loc[idx_left].dropna().values.astype(float)[:longest_length_left][1:], color="blue", marker="o", label="Left, GCS")
+    axs[1][3].scatter(patient_left_arousal_metrics.loc[idx_left].dropna().values.astype(float)[:longest_length_left][:-1], patient_left_FOUR_metrics.loc[idx_left].dropna().values.astype(float)[:longest_length_left][1:], color="red", marker="o", label="Left, FOUR")
+    # axs[1][2].scatter(patient_right_LOR_late_gradient_metrics.loc[idx_right].dropna().values.astype(float)[:longest_length_right][:-1], patient_right_GCS_metrics.loc[idx_right].dropna().values.astype(float)[:longest_length_right][1:], color="blue", marker="s", label="Right, GCS")
+    # axs[1][2].scatter(patient_right_LOR_late_gradient_metrics.loc[idx_right].dropna().values.astype(float)[:longest_length_right][:-1], patient_right_FOUR_metrics.loc[idx_right].dropna().values.astype(float)[:longest_length_right][1:], color="red", marker="s", label="Right, FOUR")
+    axs[1][3].legend()
+
+    axs[2][3].scatter(patient_left_arousal_metrics.loc[idx_left].dropna().values.astype(float)[:longest_length_left][:-2], patient_left_GCS_metrics.loc[idx_left].dropna().values.astype(float)[:longest_length_left][2:], color="blue", marker="o", label="Left, GCS")
+    axs[2][3].scatter(patient_left_arousal_metrics.loc[idx_left].dropna().values.astype(float)[:longest_length_left][:-2], patient_left_FOUR_metrics.loc[idx_left].dropna().values.astype(float)[:longest_length_left][2:], color="red", marker="o", label="Left, FOUR")
+    # axs[1][2].scatter(patient_right_LOR_late_gradient_metrics.loc[idx_right].dropna().values.astype(float)[:longest_length_right][:-1], patient_right_GCS_metrics.loc[idx_right].dropna().values.astype(float)[:longest_length_right][1:], color="blue", marker="s", label="Right, GCS")
+    # axs[1][2].scatter(patient_right_LOR_late_gradient_metrics.loc[idx_right].dropna().values.astype(float)[:longest_length_right][:-1], patient_right_FOUR_metrics.loc[idx_right].dropna().values.astype(float)[:longest_length_right][1:], color="red", marker="s", label="Right, FOUR")
+    axs[2][3].legend()
+
+    patient_left_spearman_results_arousal_gradient_0_lag = stats.spearmanr(patient_left_arousal_metrics.loc[idx_left].dropna().values.astype(float)[:longest_length_left], patient_left_FOUR_metrics.loc[idx_left].dropna().values.astype(float)[:longest_length_left])
+    patient_left_spearman_results_arousal_gradient_1_lag = stats.spearmanr(patient_left_arousal_metrics.loc[idx_left].dropna().values.astype(float)[:longest_length_left][:-1], patient_left_FOUR_metrics.loc[idx_left].dropna().values.astype(float)[:longest_length_left][1:])
+    patient_left_spearman_results_arousal_gradient_2_lag = stats.spearmanr(patient_left_arousal_metrics.loc[idx_left].dropna().values.astype(float)[:longest_length_left][:-2], patient_left_FOUR_metrics.loc[idx_left].dropna().values.astype(float)[:longest_length_left][2:])
+    patient_left_arousal_gradient_results = [patient_left_spearman_results_arousal_gradient_0_lag, patient_left_spearman_results_arousal_gradient_1_lag, patient_left_spearman_results_arousal_gradient_2_lag]
+
+    if len(np.unique(patient_left_FOUR_metrics.loc[idx_left].dropna().values.astype(float)[:longest_length_left])) >= 2 & len(np.unique(patient_left_arousal_metrics.loc[idx_left].dropna().values.astype(float)[:longest_length_left])) >= 2:
+        patient_left_model_arousal_gradient_0_lag = OrderedModel(
+        endog=patient_left_FOUR_metrics.loc[idx_left].dropna().values.astype(float)[:longest_length_left],
+        exog=patient_left_arousal_metrics.loc[idx_left].dropna().values.astype(float)[:longest_length_left],
+        distr="logit"
+        )
+    else:
+        patient_left_model_arousal_gradient_0_lag = np.nan
+    if len(np.unique(patient_left_FOUR_metrics.loc[idx_left].dropna().values.astype(float)[:longest_length_left][:-1])) >= 2 & len(np.unique(patient_left_arousal_metrics.loc[idx_left].dropna().values.astype(float)[:longest_length_left][1:])) >= 2:
+        patient_left_model_arousal_gradient_1_lag = OrderedModel(
+        endog=patient_left_FOUR_metrics.loc[idx_left].dropna().values.astype(float)[:longest_length_left][:-1],
+        exog=patient_left_arousal_metrics.loc[idx_left].dropna().values.astype(float)[:longest_length_left][1:],
+        distr="logit"
+        )
+    else:
+        patient_left_model_arousal_gradient_1_lag = np.nan
+    if len(np.unique(patient_left_FOUR_metrics.loc[idx_left].dropna().values.astype(float)[:longest_length_left][:-2])) >= 2 & len(np.unique(np.round(patient_left_arousal_metrics.loc[idx_left].dropna().values.astype(float)[:longest_length_left][2:], 10))) >= 2:
+        patient_left_model_arousal_gradient_2_lag = OrderedModel(
+        endog=patient_left_FOUR_metrics.loc[idx_left].dropna().values.astype(float)[:longest_length_left][:-2],
+        exog=patient_left_arousal_metrics.loc[idx_left].dropna().values.astype(float)[:longest_length_left][2:],
+        distr="logit"
+        )
+    else:
+        patient_left_model_arousal_gradient_2_lag = np.nan
+    patient_left_model_res_arousal_gradient_0_lag = patient_left_model_arousal_gradient_0_lag.fit(method='bfgs') if patient_left_model_arousal_gradient_0_lag is not np.nan else np.nan
+    patient_left_mode_res_arousal_gradient_1_lag = patient_left_model_arousal_gradient_1_lag.fit(method='bfgs') if patient_left_model_arousal_gradient_1_lag is not np.nan else np.nan
+    patient_left_mode_res_arousal_gradient_2_lag = patient_left_model_arousal_gradient_2_lag.fit(method='bfgs') if patient_left_model_arousal_gradient_2_lag is not np.nan else np.nan
+    patient_left_LOR_late_arousal_model_results = [patient_left_model_res_arousal_gradient_0_lag, patient_left_mode_res_arousal_gradient_1_lag, patient_left_mode_res_arousal_gradient_2_lag]
     
     
     f.tight_layout(rect=[0.1, 0, 1, 0.95])  # leaves space for row headers and suptitle

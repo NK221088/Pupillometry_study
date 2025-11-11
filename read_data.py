@@ -34,6 +34,8 @@ patient_right_closest_timestamp_LOR_early_start_time = {sheet_name: np.argmin(np
 patient_right_text_data = {sheet_name: patient_right_data[sheet_name].iloc[:patient_right_zero_indices[sheet_name]] for sheet_name in patient_right_data.keys()} # Extract text data -> Everything before first time index
 patient_right_numeric_data = {sheet_name: patient_right_data[sheet_name].iloc[patient_right_zero_indices[sheet_name]:].apply(pd.to_numeric, errors='coerce') for sheet_name in patient_right_data.keys()}
 
+patient_left_arousal_interval_data = {sheet_name: patient_left_numeric_data[sheet_name][(patient_left_numeric_data[sheet_name].index >= zero_start_time) & (patient_left_numeric_data[sheet_name].index <= light_on_time)] for sheet_name in patient_left_data.keys()}
+patient_right_arousal_interval_data = {sheet_name: patient_right_numeric_data[sheet_name][(patient_right_numeric_data[sheet_name].index >= zero_start_time) & (patient_right_numeric_data[sheet_name].index <= light_on_time)] for sheet_name in patient_right_data.keys()}
 patient_left_PLR_interval_data = {sheet_name: patient_left_numeric_data[sheet_name][(patient_left_numeric_data[sheet_name].index >= light_on_time) & (patient_left_numeric_data[sheet_name].index <= LOR_early_start_time)] for sheet_name in patient_left_data.keys()}
 patient_right_PLR_interval_data = {sheet_name: patient_right_numeric_data[sheet_name][(patient_right_numeric_data[sheet_name].index >= light_on_time) & (patient_right_numeric_data[sheet_name].index <= LOR_early_start_time)] for sheet_name in patient_right_data.keys()}
 
@@ -90,6 +92,14 @@ patient_right_timespan_during_LOR_late = {
 patient_left_LOR_gradient = {sheet_name: patient_left_increase_during_LOR_late[sheet_name] / patient_left_timespan_during_LOR_late[sheet_name] for sheet_name in patient_left_data.keys()}
 patient_right_LOR_gradient = {sheet_name: patient_right_increase_during_LOR_late[sheet_name] / patient_right_timespan_during_LOR_late[sheet_name] for sheet_name in patient_right_data.keys()}
 
+patient_left_arousal_timespan = {sheet_name: patient_left_arousal_interval_data[sheet_name].index[-1] - patient_left_arousal_interval_data[sheet_name].index[0] for sheet_name in patient_left_data.keys()} # Simply compute the timespan as the diffrence between the last and first value for the selected data
+patient_right_arousal_timespan = {sheet_name: patient_right_arousal_interval_data[sheet_name].index[-1] - patient_right_arousal_interval_data[sheet_name].index[0] for sheet_name in patient_right_data.keys()}
+patient_left_arousal_movement = {sheet_name: patient_left_arousal_interval_data[sheet_name].iloc[-1] - patient_left_arousal_interval_data[sheet_name].iloc[0] for sheet_name in patient_left_data.keys()} # Compute the size difference betweeen the last and first value
+patient_right_arousal_movement = {sheet_name: patient_right_arousal_interval_data[sheet_name].iloc[-1] - patient_right_arousal_interval_data[sheet_name].iloc[0] for sheet_name in patient_right_data.keys()}
+patient_left_arousal_gradient = {sheet_name: patient_left_arousal_movement[sheet_name] / patient_left_arousal_timespan[sheet_name] for sheet_name in patient_left_data.keys()}
+patient_right_arousal_gradient = {sheet_name: patient_right_arousal_movement[sheet_name] / patient_right_arousal_timespan[sheet_name] for sheet_name in patient_right_data.keys()}
+
+
 patient_left_GCS_metrics = pd.concat([
     patient_left_text_data[sheet_name].loc["GCS"] 
     for sheet_name in patient_left_data.keys()
@@ -144,6 +154,11 @@ patient_left_LOR_late_gradient_metrics = pd.concat([
     for sheet_name in patient_left_data.keys()
 ], axis=1, keys=patient_left_data.keys())
 
+patient_left_arousal_metrics = pd.concat([
+    patient_left_arousal_gradient[sheet_name]
+    for sheet_name in patient_left_data.keys()
+], axis=1, keys=patient_left_data.keys())
+
 patient_right_first_50_metrics = pd.concat([
     patient_right_closest_timestamp_PLR[sheet_name]
     for sheet_name in patient_right_data.keys()
@@ -156,5 +171,10 @@ patient_right_second_50_metrics = pd.concat([
 
 patient_right_LOR_late_gradient_metrics = pd.concat([
     patient_right_LOR_gradient[sheet_name]
+    for sheet_name in patient_right_data.keys()
+], axis=1, keys=patient_right_data.keys())
+
+patient_right_arousal_metrics = pd.concat([
+    patient_right_arousal_gradient[sheet_name]
     for sheet_name in patient_right_data.keys()
 ], axis=1, keys=patient_right_data.keys())
