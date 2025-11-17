@@ -6,38 +6,22 @@ import pandas as pd
 import numpy as np
 import statsmodels.formula.api as smf
 from scipy import stats
-from read_data import (patient_left_GCS_metrics, patient_left_FOUR_metrics, patient_left_SECONDS_metrics, patient_left_arousal_metrics, patient_left_first_50_metrics, patient_left_second_50_metrics, patient_left_LOR_late_gradient_metrics)
+from read_data import data_original
+from Covariance_investigation import X_pca_components_for_model
+from statsmodels.discrete.discrete_model import Logit
+import statsmodels.api as sm
 
-subject_IDs = [[subjectID] * len(patient_left_LOR_late_gradient_metrics.loc[subjectID].dropna()) for subjectID in patient_left_LOR_late_gradient_metrics.index]
-days = np.concatenate([np.arange(1, len(IDs)+1, 1) for IDs in subject_IDs]).flatten()
-subject_IDs = np.concatenate(subject_IDs)
-patient_left_GCS_scores = np.concatenate([patient_left_GCS_metrics.loc[index].dropna().values for index in patient_left_GCS_metrics.index]).astype(np.float64)
-patient_left_FOUR_scores = np.concatenate([patient_left_FOUR_metrics.loc[index].dropna().values for index in patient_left_FOUR_metrics.index]).astype(np.float64)
-patient_left_SECONDS_scores = np.concatenate([patient_left_SECONDS_metrics.loc[index].dropna().values for index in patient_left_SECONDS_metrics.index]).astype(np.float64)
-patient_left_arousal_scores = np.concatenate([patient_left_arousal_metrics.loc[index].dropna().values for index in patient_left_arousal_metrics.index]).astype(np.float64)
-patient_left_first_50_scores = np.concatenate([patient_left_first_50_metrics.loc[index].dropna().values for index in patient_left_first_50_metrics.index]).astype(np.float64)
-patient_left_second_50_scores = np.concatenate([patient_left_second_50_metrics.loc[index].dropna().values for index in patient_left_second_50_metrics.index]).astype(np.float64)
-patient_left_LOR_late_gradient_scores = np.concatenate([patient_left_LOR_late_gradient_metrics.loc[index].dropna().values for index in patient_left_LOR_late_gradient_metrics.index]).astype(np.float64)
-
-data = {
-    "subject_id": subject_IDs,
-    "day": days,
-    "GCS_scores": patient_left_GCS_scores,
-    "FOUR_scores": patient_left_FOUR_scores,
-    "SECONDS_scores": patient_left_SECONDS_scores,
-    "arousal_scores": patient_left_arousal_scores,
-    "first_50_scores": patient_left_first_50_scores,
-    "second_50_scores": patient_left_second_50_scores,
-    "LOR_late_gradient_scores": patient_left_LOR_late_gradient_scores,
-}
-
-data_original = pd.DataFrame(data)
-
+data = data_original.copy()
+data_day_one = data_original[data_original["day"] == 1]
+seconds_score_day_one = data_day_one["SECONDS_scores"]
 max_lag = 0
+model_data = pd.DataFrame(X_pca_components_for_model, columns=["PC2", "PC3", "PC4"])
+
+model_data["SECONDS_scores"] = seconds_score_day_one.values
+model_data["subject_id"] = data_day_one["subject_id"].values
 
 #for lag in range(1, max_lag+1):
-data = data_original.copy()
-data = data.sort_values(["subject_id", "day"])
+
 # data[f"LOR_late_gradient_score_lag{lag}"] = data.groupby("subject_id")["LOR_late_gradient_score"].shift(lag)
 # data[f"four_score_lag{lag}"] = data.groupby("subject_id")["four_score"].shift(lag)
 # data["day_centered"] = data["day"] - data.groupby("subject_id")["day"].transform("min")
@@ -63,7 +47,7 @@ data = data.sort_values(["subject_id", "day"])
 # print(f"LR stat: {np.round(lr_stat, 4)}")
 
 with localconverter(pandas2ri.converter):
-        globalenv["FOUR_data"] = data   
+        globalenv["model_data"] = model_data   
 r('''
 library(lme4)
 library(lmerTest)
@@ -72,19 +56,52 @@ library(see)
 library(ggplot2)
 library(patchwork)
 
-model_FOUR_arousal <- glmer(
-                SECONDS_scores ~ arousal_scores + first_50_scores + (1 | subject_id),
-                data=FOUR_data,
+model_PCA <- glmer(
+                SECONDS_scores ~ PC3 + PC4 + (1 | subject_id),
+                data=model_data,
                 family = binomial(link = "logit"))
-                
-model_FOUR_first_50 <- glmer(
-                SECONDS_scores ~ first_50_scores + (1 | subject_id),
-                data=FOUR_data,
-                family = binomial(link = "logit"))
-                
-print(summary(model_FOUR_arousal))
-print(summary(model_FOUR_first_50))
+model_PCA <- glm(
+    SECONDS_scores ~ PC3 + PC4,
+    data = model_data,
+    family = binomial(link = "logit")
+)
+
+# Model summary
+print(summary(model_PCA))
+
+# Odds ratios (easier to interpret)
+print(exp(coef(model_PCA)))
+print(exp(confint(model_PCA)))
+
+# Model fit
+library(performance)
+print(r2_nagelkerke(model_PCA))
+print(AIC(model_PCA))
+print(BIC(model_PCA))
 ''')
 
 # with localconverter(pandas2ri.converter):
 #     anova_Condch_df = globalenv["anova_Condch_df"]
+
+# Multilevel logistic regression:
+from statsmodels.miscmodels.ordinal_model import OrderedModel
+
+# Fit ordinal logistic regression
+model_ordinal = OrderedModel(
+    endog=data[data_original["day"] == 1]["FOUR_scores"].values,
+    exog=model_data[['PC3', 'PC4']],
+    distr='logit'  # or 'probit'
+)
+
+result_ordinal = model_ordinal.fit(method='bfgs')
+print(result_ordinal.summary())
+
+# Binary logistic regression:
+X = model_data[['PC3', 'PC4']]
+X = sm.add_constant(X)
+y = seconds_score_day_one.values
+model_binary = Logit(endog=y, exog=X)
+result_binary = model_binary.fit(method='bfgs')
+print(result_binary.summary())
+
+print("test")

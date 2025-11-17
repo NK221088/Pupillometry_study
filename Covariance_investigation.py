@@ -1,10 +1,13 @@
-from mixed_effect_approach import data
+from read_data import data_original
 import matplotlib.pyplot as plt
 import seaborn as sns
 import os
 import numpy as np
 import pandas as pd
+from statsmodels.stats.outliers_influence import variance_inflation_factor
+from sklearn.preprocessing import StandardScaler
 
+data = data_original.copy()
 save_path_variance = os.getenv("save_path_variance")
 data.columns = data.columns.str.replace('_', ' ').str.replace(" scores", "")
 target_correlation_matrix = data[data.columns[2:5]].corr()
@@ -48,7 +51,6 @@ fig.subplots_adjust(
     wspace=0.25,   # Width space between subplots (horizontal spacing)
     hspace=0    # Height space between subplots (vertical spacing)
 )
-# plt.show()
 plt.savefig(
     save_path_variance + f'\\Correlation_Matrix_Heatmaps.pdf',
     dpi=300,                     
@@ -145,4 +147,81 @@ for i, (bar, ev) in enumerate(zip(bars, eigenvalues_features)):
              f'{ev:.3f}', ha='center', va='bottom', fontsize=9)
 
 plt.tight_layout()
-plt.show()
+plt.savefig(
+    save_path_variance + f'\\PCA_analysis.pdf',
+    dpi=300,                     
+    bbox_inches='tight',
+    format='pdf'
+)
+plt.close(fig)
+print(results_df)
+
+vif_data = pd.DataFrame()
+vif_data["feature"] = X_features.columns
+vif_data["VIF"] = [variance_inflation_factor(X_features.values, i) 
+                   for i in range(len(X_features.columns))]
+
+# Create figure
+fig, ax = plt.subplots(figsize=(10, 6))
+
+# Define color zones (log scale)
+ax.axhspan(0, 5, alpha=0.15, color='green', zorder=0)
+ax.axhspan(5, 10, alpha=0.15, color='yellow', zorder=0)
+ax.axhspan(10, 20, alpha=0.15, color='red', zorder=0)
+
+# Color mapping
+colors = []
+for vif in vif_data['VIF']:
+    if vif < 5:
+        colors.append('#26A69A')  # Teal (low)
+    elif vif < 10:
+        colors.append('#42A5F5')  # Blue (moderate)
+    else:
+        colors.append('#EF5350')  # Red (high)
+
+# Plot points
+positions = range(len(vif_data))
+for i, (idx, row) in enumerate(vif_data.iterrows()):
+    vif = row['VIF']
+    ax.plot(i, vif, 'o', color=colors[i], markersize=10, zorder=3)
+
+# Formatting
+ax.set_xticks(positions)
+ax.set_xticklabels(vif_data['feature'], rotation=0, ha='center')
+ax.set_ylabel('Variance Inflation\nFactor (VIF, log-scaled)', fontsize=11)
+ax.set_xlabel('')
+ax.set_yscale('log')
+ax.set_ylim(0.9, max(vif_data['VIF'].max() * 1.5, 20))
+
+# Grid
+ax.grid(True, alpha=0.3, linestyle='-', linewidth=0.5)
+ax.set_axisbelow(True)
+
+# Title
+ax.set_title(f'VIF',
+            fontsize=12, fontweight='normal', pad=15)
+
+# Legend
+from matplotlib.patches import Rectangle
+legend_elements = [
+    Rectangle((0, 0), 1, 1, fc='#26A69A', label='Low (< 5)'),
+    Rectangle((0, 0), 1, 1, fc='#42A5F5', label='Moderate (< 10)'),
+    Rectangle((0, 0), 1, 1, fc='#EF5350', label='High (≥ 10)')
+]
+ax.legend(handles=legend_elements, loc='upper right', 
+            frameon=True, fancybox=True)
+
+plt.tight_layout()
+plt.tight_layout()
+plt.savefig(
+    save_path_variance + f'\\VIF_plot.pdf',
+    dpi=300,                     
+    bbox_inches='tight',
+    format='pdf'
+)
+plt.close(fig)
+
+scaler = StandardScaler()
+X_scaled = scaler.fit_transform(data[data["day"] == 1][data.columns[5:]].values)
+X_projected = X_scaled @ eigenvectors_features
+X_pca_components_for_model = X_projected[:, [1, 2, 3]]
