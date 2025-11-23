@@ -17,7 +17,7 @@ light_on_time = 3
 LOR_early_start_time = 6
 LOR_early_end_time = 8
 LOR_late_start_time = 8
-LOE_late_end_time = 13
+LOR_late_end_time = 13
 
 HC_left_data = pd.read_excel(HC_left_path, index_col=0, sheet_name=None)
 HC_right_data = pd.read_excel(HC_right_path, index_col=0, sheet_name=None)
@@ -34,63 +34,10 @@ patient_right_closest_timestamp_LOR_early_start_time = {sheet_name: np.argmin(np
 patient_right_text_data = {sheet_name: patient_right_data[sheet_name].iloc[:patient_right_zero_indices[sheet_name]] for sheet_name in patient_right_data.keys()} # Extract text data -> Everything before first time index
 patient_right_numeric_data = {sheet_name: patient_right_data[sheet_name].iloc[patient_right_zero_indices[sheet_name]:].apply(pd.to_numeric, errors='coerce') for sheet_name in patient_right_data.keys()}
 
+##################################################################################
+# Arousal gradient
 patient_left_arousal_interval_data = {sheet_name: patient_left_numeric_data[sheet_name][(patient_left_numeric_data[sheet_name].index >= zero_start_time) & (patient_left_numeric_data[sheet_name].index <= light_on_time)] for sheet_name in patient_left_data.keys()}
 patient_right_arousal_interval_data = {sheet_name: patient_right_numeric_data[sheet_name][(patient_right_numeric_data[sheet_name].index >= zero_start_time) & (patient_right_numeric_data[sheet_name].index <= light_on_time)] for sheet_name in patient_right_data.keys()}
-patient_left_PLR_interval_data = {sheet_name: patient_left_numeric_data[sheet_name][(patient_left_numeric_data[sheet_name].index >= light_on_time) & (patient_left_numeric_data[sheet_name].index <= LOR_early_start_time)] for sheet_name in patient_left_data.keys()}
-patient_right_PLR_interval_data = {sheet_name: patient_right_numeric_data[sheet_name][(patient_right_numeric_data[sheet_name].index >= light_on_time) & (patient_right_numeric_data[sheet_name].index <= LOR_early_start_time)] for sheet_name in patient_right_data.keys()}
-
-patient_left_LOR_interval_data = {sheet_name: patient_left_numeric_data[sheet_name][(patient_left_numeric_data[sheet_name].index >= LOR_early_start_time) & (patient_left_numeric_data[sheet_name].index <= LOE_late_end_time)] for sheet_name in patient_left_data.keys()}
-patient_right_LOR_interval_data = {sheet_name: patient_right_numeric_data[sheet_name][(patient_right_numeric_data[sheet_name].index >= LOR_early_start_time) & (patient_right_numeric_data[sheet_name].index <= LOE_late_end_time)] for sheet_name in patient_right_data.keys()}
-
-# Find 50 % numeric value
-patient_left_highest_values = {sheet_name: patient_left_numeric_data[sheet_name].iloc[:patient_left_closest_timestamp_LOR_early_start_time[sheet_name]].max() for sheet_name in patient_left_data.keys()}
-patient_left_50_percent_values = {sheet_name: patient_left_highest_values[sheet_name] * 0.5 for sheet_name in patient_left_data.keys()}
-
-patient_right_highest_values = {sheet_name: patient_right_numeric_data[sheet_name].iloc[:patient_right_closest_timestamp_LOR_early_start_time[sheet_name]].max() for sheet_name in patient_right_data.keys()}
-patient_right_50_percent_values = {sheet_name: patient_right_highest_values[sheet_name] * 0.5 for sheet_name in patient_right_data.keys()}
-
-# Find timestamp closest to numeric value
-patient_left_closest_timestamp_PLR = {sheet_name: (patient_left_PLR_interval_data[sheet_name] - patient_left_50_percent_values[sheet_name]).abs().idxmin() for sheet_name in patient_left_data.keys()}
-patient_right_closest_timestamp_PLR = {sheet_name: (patient_right_PLR_interval_data[sheet_name] - patient_right_50_percent_values[sheet_name]).abs().idxmin() for sheet_name in patient_right_data.keys()}
-patient_left_closest_timestamp_LOR = {sheet_name: (patient_left_LOR_interval_data[sheet_name] - patient_left_50_percent_values[sheet_name]).abs().idxmin() for sheet_name in patient_left_data.keys()}
-patient_right_closest_timestamp_LOR = {sheet_name: (patient_right_LOR_interval_data[sheet_name] - patient_right_50_percent_values[sheet_name]).abs().idxmin() for sheet_name in patient_right_data.keys()}
-
-patient_left_increase_during_LOR_late = {
-    sheet_name: (
-        patient_left_LOR_interval_data[sheet_name].iloc[-1] - patient_left_LOR_interval_data[sheet_name].iloc[0]
-        if not patient_left_LOR_interval_data[sheet_name].iloc[-1].isna().all()
-        else patient_left_LOR_interval_data[sheet_name].iloc[-2] - patient_left_LOR_interval_data[sheet_name].iloc[0]
-    )
-    for sheet_name in patient_left_data.keys()
-}
-patient_right_increase_during_LOR_late = {
-    sheet_name: (
-        patient_right_LOR_interval_data[sheet_name].iloc[-1] - patient_right_LOR_interval_data[sheet_name].iloc[0]
-        if not patient_right_LOR_interval_data[sheet_name].iloc[-1].isna().all()
-        else patient_right_LOR_interval_data[sheet_name].iloc[-2] - patient_right_LOR_interval_data[sheet_name].iloc[0]
-    )
-    for sheet_name in patient_right_data.keys()
-}
-
-patient_left_timespan_during_LOR_late = {
-    sheet_name: (
-        patient_left_LOR_interval_data[sheet_name].index[-1] - (patient_left_LOR_interval_data[sheet_name].index.to_series() - LOR_late_start_time).abs().idxmin()
-        if not patient_left_LOR_interval_data[sheet_name].iloc[-1].isna().all()
-        else patient_left_LOR_interval_data[sheet_name].index[-2] - (patient_left_LOR_interval_data[sheet_name].index.to_series() - LOR_late_start_time).abs().idxmin()
-    )
-    for sheet_name in patient_left_data.keys()
-}
-patient_right_timespan_during_LOR_late = {
-    sheet_name: (
-        patient_right_LOR_interval_data[sheet_name].index[-1] - (patient_right_LOR_interval_data[sheet_name].index.to_series() - LOR_late_start_time).abs().idxmin()
-        if not patient_right_LOR_interval_data[sheet_name].iloc[-1].isna().all()
-        else patient_right_LOR_interval_data[sheet_name].index[-2] - (patient_right_LOR_interval_data[sheet_name].index.to_series() - LOR_late_start_time).abs().idxmin()
-    )
-    for sheet_name in patient_right_data.keys()
-}
-
-patient_left_LOR_gradient = {sheet_name: patient_left_increase_during_LOR_late[sheet_name] / patient_left_timespan_during_LOR_late[sheet_name] for sheet_name in patient_left_data.keys()}
-patient_right_LOR_gradient = {sheet_name: patient_right_increase_during_LOR_late[sheet_name] / patient_right_timespan_during_LOR_late[sheet_name] for sheet_name in patient_right_data.keys()}
 
 patient_left_arousal_timespan = {sheet_name: patient_left_arousal_interval_data[sheet_name].index[-1] - patient_left_arousal_interval_data[sheet_name].index[0] for sheet_name in patient_left_data.keys()} # Simply compute the timespan as the diffrence between the last and first value for the selected data
 patient_right_arousal_timespan = {sheet_name: patient_right_arousal_interval_data[sheet_name].index[-1] - patient_right_arousal_interval_data[sheet_name].index[0] for sheet_name in patient_right_data.keys()}
@@ -99,7 +46,105 @@ patient_right_arousal_movement = {sheet_name: patient_right_arousal_interval_dat
 patient_left_arousal_gradient = {sheet_name: patient_left_arousal_movement[sheet_name] / patient_left_arousal_timespan[sheet_name] for sheet_name in patient_left_data.keys()}
 patient_right_arousal_gradient = {sheet_name: patient_right_arousal_movement[sheet_name] / patient_right_arousal_timespan[sheet_name] for sheet_name in patient_right_data.keys()}
 
+##################################################################################
+# Max PLR:
+patient_left_PLR_interval_data = {sheet_name: patient_left_numeric_data[sheet_name][(patient_left_numeric_data[sheet_name].index >= light_on_time) & (patient_left_numeric_data[sheet_name].index <= LOR_early_start_time)] for sheet_name in patient_left_data.keys()}
+patient_right_PLR_interval_data = {sheet_name: patient_right_numeric_data[sheet_name][(patient_right_numeric_data[sheet_name].index >= light_on_time) & (patient_right_numeric_data[sheet_name].index <= LOR_early_start_time)] for sheet_name in patient_right_data.keys()}
 
+patient_left_max_PLR = {sheet_name: patient_left_PLR_interval_data[sheet_name].max() - patient_left_PLR_interval_data[sheet_name].min() for sheet_name in patient_left_data.keys()} 
+patient_right_max_PLR = {sheet_name: patient_right_PLR_interval_data[sheet_name].max() - patient_right_PLR_interval_data[sheet_name].min() for sheet_name in patient_right_data.keys()}
+
+##################################################################################
+# Find 50 % numeric value
+patient_left_highest_values = {sheet_name: patient_left_numeric_data[sheet_name].iloc[:patient_left_closest_timestamp_LOR_early_start_time[sheet_name]].max() for sheet_name in patient_left_data.keys()} # Find the highest value
+patient_left_50_percent_values = {sheet_name: patient_left_highest_values[sheet_name] * 0.5 for sheet_name in patient_left_data.keys()} # Compute half the max value
+
+patient_right_highest_values = {sheet_name: patient_right_numeric_data[sheet_name].iloc[:patient_right_closest_timestamp_LOR_early_start_time[sheet_name]].max() for sheet_name in patient_right_data.keys()} # Find the highest value
+patient_right_50_percent_values = {sheet_name: patient_right_highest_values[sheet_name] * 0.5 for sheet_name in patient_right_data.keys()} # Compute half the max value
+
+# Find timestamp closest to numeric value
+patient_left_closest_timestamp_PLR = {sheet_name: (patient_left_PLR_interval_data[sheet_name] - patient_left_50_percent_values[sheet_name]).abs().idxmin() for sheet_name in patient_left_data.keys()}
+patient_right_closest_timestamp_PLR = {sheet_name: (patient_right_PLR_interval_data[sheet_name] - patient_right_50_percent_values[sheet_name]).abs().idxmin() for sheet_name in patient_right_data.keys()}
+
+# Define the LOR interval as the next 50 % expand value must be in this interval
+patient_left_LOR_interval_data = {sheet_name: patient_left_numeric_data[sheet_name][(patient_left_numeric_data[sheet_name].index >= LOR_early_start_time) & (patient_left_numeric_data[sheet_name].index <= LOR_late_end_time)] for sheet_name in patient_left_data.keys()}
+patient_right_LOR_interval_data = {sheet_name: patient_right_numeric_data[sheet_name][(patient_right_numeric_data[sheet_name].index >= LOR_early_start_time) & (patient_right_numeric_data[sheet_name].index <= LOR_late_end_time)] for sheet_name in patient_right_data.keys()}
+
+patient_left_closest_timestamp_LOR = {sheet_name: (patient_left_LOR_interval_data[sheet_name] - patient_left_50_percent_values[sheet_name]).abs().idxmin() for sheet_name in patient_left_data.keys()}
+patient_right_closest_timestamp_LOR = {sheet_name: (patient_right_LOR_interval_data[sheet_name] - patient_right_50_percent_values[sheet_name]).abs().idxmin() for sheet_name in patient_right_data.keys()}
+
+##################################################################################
+# LOR Early Gradient:
+patient_left_LOR_early_interval_data = {sheet_name: patient_left_numeric_data[sheet_name][(patient_left_numeric_data[sheet_name].index >= LOR_early_start_time) & (patient_left_numeric_data[sheet_name].index <= LOR_early_end_time)] for sheet_name in patient_left_data.keys()}
+patient_right_LOR_early_interval_data = {sheet_name: patient_right_numeric_data[sheet_name][(patient_right_numeric_data[sheet_name].index >= LOR_early_start_time) & (patient_right_numeric_data[sheet_name].index <= LOR_early_end_time)] for sheet_name in patient_right_data.keys()}
+
+# Find the increase during LOR early for left and right respectively
+patient_left_increase_during_LOR_early = {
+    sheet_name: (
+        patient_left_LOR_early_interval_data[sheet_name].iloc[-1] - patient_left_LOR_early_interval_data[sheet_name].iloc[0]
+        if not patient_left_LOR_early_interval_data[sheet_name].iloc[-1].isna().all()
+        else patient_left_LOR_early_interval_data[sheet_name].iloc[-2] - patient_left_LOR_early_interval_data[sheet_name].iloc[0]
+    )
+    for sheet_name in patient_left_data.keys()
+}
+patient_right_increase_during_LOR_early = {
+    sheet_name: (
+        patient_right_LOR_early_interval_data[sheet_name].iloc[-1] - patient_right_LOR_early_interval_data[sheet_name].iloc[0]
+        if not patient_right_LOR_early_interval_data[sheet_name].iloc[-1].isna().all()
+        else patient_right_LOR_early_interval_data[sheet_name].iloc[-2] - patient_right_LOR_early_interval_data[sheet_name].iloc[0]
+    )
+    for sheet_name in patient_right_data.keys()
+}
+
+# Find timespans for left and right respectively
+patient_left_timespan_during_LOR_early = {
+    sheet_name: patient_left_LOR_early_interval_data[sheet_name].index[-1] - patient_left_LOR_early_interval_data[sheet_name].index[0] for sheet_name in patient_left_data.keys()
+}
+patient_right_timespan_during_LOR_early = {
+    sheet_name: patient_right_LOR_early_interval_data[sheet_name].index[-1] - patient_right_LOR_early_interval_data[sheet_name].index[0] for sheet_name in patient_right_data.keys()
+}
+
+# Compute gradient
+patient_left_LOR_early_gradient = {sheet_name: patient_left_increase_during_LOR_early[sheet_name] / patient_left_timespan_during_LOR_early[sheet_name] for sheet_name in patient_left_data.keys()}
+patient_right_LOR_early_gradient = {sheet_name: patient_right_increase_during_LOR_early[sheet_name] / patient_right_timespan_during_LOR_early[sheet_name] for sheet_name in patient_right_data.keys()}
+
+##################################################################################
+# LOR Late Gradient:
+patient_left_LOR_late_interval_data = {sheet_name: patient_left_numeric_data[sheet_name][(patient_left_numeric_data[sheet_name].index >= LOR_late_start_time) & (patient_left_numeric_data[sheet_name].index <= LOR_late_end_time)] for sheet_name in patient_left_data.keys()}
+patient_right_LOR_late_interval_data = {sheet_name: patient_right_numeric_data[sheet_name][(patient_right_numeric_data[sheet_name].index >= LOR_late_start_time) & (patient_right_numeric_data[sheet_name].index <= LOR_late_end_time)] for sheet_name in patient_right_data.keys()}
+
+# Find the increase during LOR early for left and right respectively
+patient_left_increase_during_LOR_late = {
+    sheet_name: (
+        patient_left_LOR_late_interval_data[sheet_name].iloc[-1] - patient_left_LOR_late_interval_data[sheet_name].iloc[0]
+        if not patient_left_LOR_late_interval_data[sheet_name].iloc[-1].isna().all()
+        else patient_left_LOR_late_interval_data[sheet_name].iloc[-2] - patient_left_LOR_late_interval_data[sheet_name].iloc[0]
+    )
+    for sheet_name in patient_left_data.keys()
+}
+patient_right_increase_during_LOR_late = {
+    sheet_name: (
+        patient_right_LOR_late_interval_data[sheet_name].iloc[-1] - patient_right_LOR_late_interval_data[sheet_name].iloc[0]
+        if not patient_right_LOR_late_interval_data[sheet_name].iloc[-1].isna().all()
+        else patient_right_LOR_late_interval_data[sheet_name].iloc[-2] - patient_right_LOR_late_interval_data[sheet_name].iloc[0]
+    )
+    for sheet_name in patient_right_data.keys()
+}
+
+# Find timespans for left and right respectively
+patient_left_timespan_during_LOR_late = {
+    sheet_name: patient_left_LOR_late_interval_data[sheet_name].index[-1] - patient_left_LOR_late_interval_data[sheet_name].index[0] for sheet_name in patient_left_data.keys()
+}
+patient_right_timespan_during_LOR_late = {
+    sheet_name: patient_right_LOR_late_interval_data[sheet_name].index[-1] - patient_right_LOR_late_interval_data[sheet_name].index[0] for sheet_name in patient_right_data.keys()
+}
+
+# Compute gradient
+patient_left_LOR_late_gradient = {sheet_name: patient_left_increase_during_LOR_late[sheet_name] / patient_left_timespan_during_LOR_late[sheet_name] for sheet_name in patient_left_data.keys()}
+patient_right_LOR_late_gradient = {sheet_name: patient_right_increase_during_LOR_late[sheet_name] / patient_right_timespan_during_LOR_late[sheet_name] for sheet_name in patient_right_data.keys()}
+
+##################################################################################
+# Diagnostic metrics:
 patient_left_GCS_metrics = pd.concat([
     patient_left_text_data[sheet_name].loc["GCS"] 
     for sheet_name in patient_left_data.keys()
@@ -115,11 +160,11 @@ patient_left_SECONDS_metrics = pd.concat([
     for sheet_name in patient_left_data.keys()
 ], axis=1, keys=patient_left_data.keys())
 SECONDS_conversion_dict = {
-"C": 0,
-"U": 0,
-"M-": 1,
-"M+": 1,
-"E": 1
+"C": 1,
+"U": 2,
+"M-": 3,
+"M+": 4,
+"E": 5
 }
 patient_left_SECONDS_metrics = patient_left_SECONDS_metrics.replace(SECONDS_conversion_dict)
 
@@ -139,6 +184,18 @@ patient_right_SECONDS_metrics = pd.concat([
 ], axis=1, keys=patient_right_data.keys())
 patient_right_SECONDS_metrics = patient_right_SECONDS_metrics.replace(SECONDS_conversion_dict)
 
+##################################################################################
+# Store data left:
+patient_left_arousal_metrics = pd.concat([
+    patient_left_arousal_gradient[sheet_name]
+    for sheet_name in patient_left_data.keys()
+], axis=1, keys=patient_left_data.keys())
+
+patient_left_max_PLR_metrics = pd.concat([
+    patient_left_max_PLR[sheet_name]
+    for sheet_name in patient_left_data.keys()
+], axis=1, keys=patient_left_data.keys())
+
 patient_left_first_50_metrics = pd.concat([
     patient_left_closest_timestamp_PLR[sheet_name]
     for sheet_name in patient_left_data.keys()
@@ -149,15 +206,57 @@ patient_left_second_50_metrics = pd.concat([
     for sheet_name in patient_left_data.keys()
 ], axis=1, keys=patient_left_data.keys())
 
-patient_left_LOR_late_gradient_metrics = pd.concat([
-    patient_left_LOR_gradient[sheet_name]
+patient_left_LOR_early_gradient_metrics = pd.concat([
+    patient_left_LOR_early_gradient[sheet_name]
     for sheet_name in patient_left_data.keys()
 ], axis=1, keys=patient_left_data.keys())
 
-patient_left_arousal_metrics = pd.concat([
-    patient_left_arousal_gradient[sheet_name]
+patient_left_LOR_late_gradient_metrics = pd.concat([
+    patient_left_LOR_late_gradient[sheet_name]
     for sheet_name in patient_left_data.keys()
 ], axis=1, keys=patient_left_data.keys())
+
+subject_IDs = [[subjectID] * len(patient_left_LOR_late_gradient_metrics.loc[subjectID].dropna()) for subjectID in patient_left_LOR_late_gradient_metrics.index]
+days = np.concatenate([np.arange(1, len(IDs)+1, 1) for IDs in subject_IDs]).flatten()
+subject_IDs = np.concatenate(subject_IDs)
+patient_left_GCS_scores = np.concatenate([patient_left_GCS_metrics.loc[index].dropna().values for index in patient_left_GCS_metrics.index]).astype(np.float64)
+patient_left_FOUR_scores = np.concatenate([patient_left_FOUR_metrics.loc[index].dropna().values for index in patient_left_FOUR_metrics.index]).astype(np.float64)
+patient_left_SECONDS_scores = np.concatenate([patient_left_SECONDS_metrics.loc[index].dropna().values for index in patient_left_SECONDS_metrics.index]).astype(np.float64)
+
+patient_left_arousal_scores = np.concatenate([patient_left_arousal_metrics.loc[index].dropna().values for index in patient_left_arousal_metrics.index]).astype(np.float64)
+patient_left_max_PLR_scores = np.concatenate([patient_left_max_PLR_metrics.loc[index].dropna().values for index in patient_left_max_PLR_metrics.index]).astype(np.float64)
+patient_left_first_50_scores = np.concatenate([patient_left_first_50_metrics.loc[index].dropna().values for index in patient_left_first_50_metrics.index]).astype(np.float64)
+patient_left_second_50_scores = np.concatenate([patient_left_second_50_metrics.loc[index].dropna().values for index in patient_left_second_50_metrics.index]).astype(np.float64)
+patient_left_LOR_early_gradient_scores = np.concatenate([patient_left_LOR_early_gradient_metrics.loc[index].dropna().values for index in patient_left_LOR_early_gradient_metrics.index]).astype(np.float64)
+patient_left_LOR_late_gradient_scores = np.concatenate([patient_left_LOR_late_gradient_metrics.loc[index].dropna().values for index in patient_left_LOR_late_gradient_metrics.index]).astype(np.float64)
+
+data = {
+    "Subject ID": subject_IDs,
+    "Day": days,
+    "GCS scores": patient_left_GCS_scores,
+    "FOUR scores": patient_left_FOUR_scores,
+    "SECONDS scores": patient_left_SECONDS_scores,
+    "Arousal gradient": patient_left_arousal_scores,
+    "Max PLR": patient_left_max_PLR_scores,
+    "First 50% scores": patient_left_first_50_scores,
+    "Second 50% scores": patient_left_second_50_scores,
+    "LOR early gradient": patient_left_LOR_early_gradient_scores,
+    "LOR late gradient": patient_left_LOR_late_gradient_scores,
+}
+left_data_original = pd.DataFrame(data)
+left_data_original = left_data_original.sort_values(["Subject ID", "Day"])
+
+##################################################################################
+# Store data right:
+patient_right_arousal_metrics = pd.concat([
+    patient_right_arousal_gradient[sheet_name]
+    for sheet_name in patient_right_data.keys()
+], axis=1, keys=patient_right_data.keys())
+
+patient_right_max_PLR_metrics = pd.concat([
+    patient_right_max_PLR[sheet_name]
+    for sheet_name in patient_right_data.keys()
+], axis=1, keys=patient_right_data.keys())
 
 patient_right_first_50_metrics = pd.concat([
     patient_right_closest_timestamp_PLR[sheet_name]
@@ -169,37 +268,12 @@ patient_right_second_50_metrics = pd.concat([
     for sheet_name in patient_right_data.keys()
 ], axis=1, keys=patient_right_data.keys())
 
+patient_right_LOR_early_gradient_metrics = pd.concat([
+    patient_right_LOR_early_gradient[sheet_name]
+    for sheet_name in patient_right_data.keys()
+], axis=1, keys=patient_right_data.keys())
+
 patient_right_LOR_late_gradient_metrics = pd.concat([
-    patient_right_LOR_gradient[sheet_name]
+    patient_right_LOR_late_gradient[sheet_name]
     for sheet_name in patient_right_data.keys()
 ], axis=1, keys=patient_right_data.keys())
-
-patient_right_arousal_metrics = pd.concat([
-    patient_right_arousal_gradient[sheet_name]
-    for sheet_name in patient_right_data.keys()
-], axis=1, keys=patient_right_data.keys())
-
-subject_IDs = [[subjectID] * len(patient_left_LOR_late_gradient_metrics.loc[subjectID].dropna()) for subjectID in patient_left_LOR_late_gradient_metrics.index]
-days = np.concatenate([np.arange(1, len(IDs)+1, 1) for IDs in subject_IDs]).flatten()
-subject_IDs = np.concatenate(subject_IDs)
-patient_left_GCS_scores = np.concatenate([patient_left_GCS_metrics.loc[index].dropna().values for index in patient_left_GCS_metrics.index]).astype(np.float64)
-patient_left_FOUR_scores = np.concatenate([patient_left_FOUR_metrics.loc[index].dropna().values for index in patient_left_FOUR_metrics.index]).astype(np.float64)
-patient_left_SECONDS_scores = np.concatenate([patient_left_SECONDS_metrics.loc[index].dropna().values for index in patient_left_SECONDS_metrics.index]).astype(np.float64)
-patient_left_arousal_scores = np.concatenate([patient_left_arousal_metrics.loc[index].dropna().values for index in patient_left_arousal_metrics.index]).astype(np.float64)
-patient_left_first_50_scores = np.concatenate([patient_left_first_50_metrics.loc[index].dropna().values for index in patient_left_first_50_metrics.index]).astype(np.float64)
-patient_left_second_50_scores = np.concatenate([patient_left_second_50_metrics.loc[index].dropna().values for index in patient_left_second_50_metrics.index]).astype(np.float64)
-patient_left_LOR_late_gradient_scores = np.concatenate([patient_left_LOR_late_gradient_metrics.loc[index].dropna().values for index in patient_left_LOR_late_gradient_metrics.index]).astype(np.float64)
-
-data = {
-    "subject_id": subject_IDs,
-    "day": days,
-    "GCS_scores": patient_left_GCS_scores,
-    "FOUR_scores": patient_left_FOUR_scores,
-    "SECONDS_scores": patient_left_SECONDS_scores,
-    "arousal_scores": patient_left_arousal_scores,
-    "first_50_scores": patient_left_first_50_scores,
-    "second_50_scores": patient_left_second_50_scores,
-    "LOR_late_gradient_scores": patient_left_LOR_late_gradient_scores,
-}
-data_original = pd.DataFrame(data)
-data_original = data_original.sort_values(["subject_id", "day"])

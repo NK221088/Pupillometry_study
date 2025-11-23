@@ -6,13 +6,13 @@ import pandas as pd
 import numpy as np
 import statsmodels.formula.api as smf
 from scipy import stats
-from read_data import data_original
+from read_data import left_data_original
 from Covariance_investigation import X_pca_components_for_model
 from statsmodels.discrete.discrete_model import Logit
 import statsmodels.api as sm
 
-data = data_original.copy()
-data_day_one = data_original[data_original["day"] == 1]
+data = left_data_original.copy()
+data_day_one = left_data_original[left_data_original["day"] == 1]
 seconds_score_day_one = data_day_one["SECONDS_scores"]
 max_lag = 0
 model_data = pd.DataFrame(X_pca_components_for_model, columns=["PC2", "PC3", "PC4"])
