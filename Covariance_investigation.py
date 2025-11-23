@@ -1,4 +1,4 @@
-from read_data import data_original
+from read_data import left_data_original
 import matplotlib.pyplot as plt
 import seaborn as sns
 import os
@@ -7,7 +7,7 @@ import pandas as pd
 from statsmodels.stats.outliers_influence import variance_inflation_factor
 from sklearn.preprocessing import StandardScaler
 
-data = data_original.copy()
+data = left_data_original.copy()
 save_path_variance = os.getenv("save_path_variance")
 data.columns = data.columns.str.replace('_', ' ').str.replace(" scores", "")
 target_correlation_matrix = data[data.columns[2:5]].corr()

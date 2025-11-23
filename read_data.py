@@ -160,11 +160,11 @@ patient_left_SECONDS_metrics = pd.concat([
     for sheet_name in patient_left_data.keys()
 ], axis=1, keys=patient_left_data.keys())
 SECONDS_conversion_dict = {
-"C": 1,
-"U": 2,
-"M-": 3,
-"M+": 4,
-"E": 5
+"C": 0,
+"U": 0,
+"M-": 1,
+"M+": 1,
+"E": 1
 }
 patient_left_SECONDS_metrics = patient_left_SECONDS_metrics.replace(SECONDS_conversion_dict)
 
