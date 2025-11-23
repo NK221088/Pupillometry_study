@@ -47,18 +47,18 @@ def Spearman_corrfunc(x, y, **kwargs):
         sig = 'ns'
     
     ax = plt.gca()
-    ax.annotate(f'ρ = {r:.2f}{sig}',
+    ax.annotate(rf'$\rho$ = {r:.2f}{sig}',
                 xy=(0.5, 0.5), xycoords='axes fraction',
                 ha='center', va='center', fontsize=12)
 
 # Create the pairplot
-diagnostic_metric = "SECONDS"
-columns_to_plot = ["Arousal gradient", "Max PLR", "LOR early gradient", "LOR late gradient", f"{diagnostic_metric} scores"]
+columns_to_plot = ["Arousal gradient", "Max PLR", "LOR early gradient", "LOR late gradient", "FOUR scores", "SECONDS scores", "GCS scores"]
 
 g = sns.PairGrid(left_data_original[columns_to_plot], diag_sharey=False)
 
-# Lower triangle: scatter plots
+# Lower triangle: scatter plots with regression line
 g.map_lower(sns.scatterplot, alpha=0.6)
+g.map_lower(sns.regplot, scatter=False, color='red', line_kws={'linewidth': 1.5})
 
 # Diagonal: histograms
 g.map_diag(sns.histplot, kde=True)
@@ -71,7 +71,7 @@ plt.tight_layout()
 save_path_variance = os.getenv("save_path_variance")
 
 plt.savefig(
-    os.path.join(save_path_variance, f'Correlation_histograms_{diagnostic_metric}_scores.pdf'),
+    os.path.join(save_path_variance, f'Correlation_histograms.pdf'),
     dpi=300,                     
     bbox_inches='tight',
     format='pdf'
