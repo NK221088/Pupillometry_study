@@ -9,7 +9,7 @@ load_dotenv()
 
 HC_left_path = os.getenv("HC_left_data_path")
 HC_right_path = os.getenv("HC_right_data_path")
-patient_left_path =os.getenv("patient_left_data_path")
+patient_left_path = os.getenv("patient_left_data_path")
 patient_right_path = os.getenv("patient_right_data_path")
 
 zero_start_time = 0

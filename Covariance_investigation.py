@@ -212,7 +212,6 @@ ax.legend(handles=legend_elements, loc='upper right',
             frameon=True, fancybox=True)
 
 plt.tight_layout()
-plt.tight_layout()
 plt.savefig(
     save_path_variance + f'\\VIF_plot.pdf',
     dpi=300,                     

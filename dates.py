@@ -1,6 +1,9 @@
 import pandas as pd
 import numpy as np
 import os
+from dotenv import load_dotenv
+
+load_dotenv()
 
 HC_left_path = os.getenv("dates_data_path")
 dates = pd.read_csv(HC_left_path)
@@ -26,7 +29,5 @@ dates_data = {
     "individuel_dates": individuel_dates,
 }
 dates_data_original = pd.DataFrame(dates_data)
-    
-    
 
 print("HELLO WORLD")
