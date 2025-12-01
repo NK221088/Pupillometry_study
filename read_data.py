@@ -9,8 +9,10 @@ load_dotenv()
 
 HC_left_path = os.getenv("HC_left_data_path")
 HC_right_path = os.getenv("HC_right_data_path")
-patient_left_path = os.getenv("patient_left_data_path")
-patient_right_path = os.getenv("patient_right_data_path")
+# patient_left_path = os.getenv("patient_left_data_path")
+# patient_right_path = os.getenv("patient_right_data_path")
+patient_left_path = os.getenv("patient_left_250_data_path")
+patient_right_path = os.getenv("patient_right_250_data_path")
 
 zero_start_time = 0
 light_on_time = 3
@@ -41,8 +43,8 @@ patient_right_arousal_interval_data = {sheet_name: patient_right_numeric_data[sh
 
 patient_left_arousal_timespan = {sheet_name: patient_left_arousal_interval_data[sheet_name].index[-1] - patient_left_arousal_interval_data[sheet_name].index[0] for sheet_name in patient_left_data.keys()} # Simply compute the timespan as the diffrence between the last and first value for the selected data
 patient_right_arousal_timespan = {sheet_name: patient_right_arousal_interval_data[sheet_name].index[-1] - patient_right_arousal_interval_data[sheet_name].index[0] for sheet_name in patient_right_data.keys()}
-patient_left_arousal_movement = {sheet_name: (patient_left_arousal_interval_data[sheet_name].iloc[0] - patient_left_arousal_interval_data[sheet_name].max()).clip(lower=0) for sheet_name in patient_left_data.keys()} # Compute the size difference betweeen the last and first value
-patient_right_arousal_movement = {sheet_name: (patient_right_arousal_interval_data[sheet_name].iloc[0] - patient_right_arousal_interval_data[sheet_name].max()).clip(lower=0) for sheet_name in patient_right_data.keys()}
+patient_left_arousal_movement = {sheet_name: (patient_left_arousal_interval_data[sheet_name].max() - patient_left_arousal_interval_data[sheet_name].iloc[0]).clip(lower=0) for sheet_name in patient_left_data.keys()} # Compute the size difference betweeen the last and first value
+patient_right_arousal_movement = {sheet_name: (patient_right_arousal_interval_data[sheet_name].max() - patient_right_arousal_interval_data[sheet_name].iloc[0]).clip(lower=0) for sheet_name in patient_right_data.keys()}
 patient_left_arousal_gradient = {sheet_name: patient_left_arousal_movement[sheet_name] / patient_left_arousal_timespan[sheet_name] for sheet_name in patient_left_data.keys()}
 patient_right_arousal_gradient = {sheet_name: patient_right_arousal_movement[sheet_name] / patient_right_arousal_timespan[sheet_name] for sheet_name in patient_right_data.keys()}
 
@@ -80,10 +82,10 @@ patient_right_LOR_early_interval_data = {sheet_name: patient_right_numeric_data[
 
 # Find the increase during LOR early for left and right respectively
 patient_left_increase_during_LOR_early = {
-    sheet_name: (patient_left_LOR_early_interval_data[sheet_name].iloc[0] - patient_left_LOR_early_interval_data[sheet_name].max()) for sheet_name in patient_left_data.keys()}
+    sheet_name: (patient_left_LOR_early_interval_data[sheet_name].max() - patient_left_LOR_early_interval_data[sheet_name].iloc[0]) for sheet_name in patient_left_data.keys()}
 
 patient_right_increase_during_LOR_early = {
-    sheet_name: (patient_right_LOR_early_interval_data[sheet_name].iloc[0] - patient_right_LOR_early_interval_data[sheet_name].max()) for sheet_name in patient_right_data.keys()}
+    sheet_name: (patient_right_LOR_early_interval_data[sheet_name].max() - patient_right_LOR_early_interval_data[sheet_name].iloc[0]) for sheet_name in patient_right_data.keys()}
 
 # Find timespans for left and right respectively
 patient_left_timespan_during_LOR_early = {
@@ -104,10 +106,10 @@ patient_right_LOR_late_interval_data = {sheet_name: patient_right_numeric_data[s
 
 # Find the increase during LOR early for left and right respectively
 patient_left_increase_during_LOR_late = {
-    sheet_name: (patient_left_LOR_late_interval_data[sheet_name].iloc[0] - patient_left_LOR_late_interval_data[sheet_name].max()) for sheet_name in patient_left_data.keys()}
+    sheet_name: (patient_left_LOR_late_interval_data[sheet_name].max() - patient_left_LOR_late_interval_data[sheet_name].iloc[0]) for sheet_name in patient_left_data.keys()}
 
 patient_right_increase_during_LOR_late = {
-    sheet_name: (patient_right_LOR_late_interval_data[sheet_name].iloc[0] - patient_right_LOR_late_interval_data[sheet_name].max()) for sheet_name in patient_right_data.keys()}
+    sheet_name: (patient_right_LOR_late_interval_data[sheet_name].max() - patient_right_LOR_late_interval_data[sheet_name].iloc[0]) for sheet_name in patient_right_data.keys()}
 
 # Find timespans for left and right respectively
 patient_left_timespan_during_LOR_late = {
@@ -204,12 +206,43 @@ patient_left_35_metrics = pd.concat([
     for sheet_name in patient_left_data.keys()
 ], axis=1, keys=patient_left_data.keys())
 
-subject_IDs = [[subjectID] * len(patient_left_LOR_late_gradient_metrics.loc[subjectID].dropna()) for subjectID in patient_left_LOR_late_gradient_metrics.index]
-days = np.concatenate([np.arange(1, len(IDs)+1, 1) for IDs in subject_IDs]).flatten()
-subject_IDs = np.concatenate(subject_IDs)
-patient_left_GCS_scores = np.concatenate([patient_left_GCS_metrics.loc[index].dropna().values for index in patient_left_GCS_metrics.index]).astype(np.float64)
-patient_left_FOUR_scores = np.concatenate([patient_left_FOUR_metrics.loc[index].dropna().values for index in patient_left_FOUR_metrics.index]).astype(np.float64)
-patient_left_SECONDS_scores = np.concatenate([patient_left_SECONDS_metrics.loc[index].dropna().values for index in patient_left_SECONDS_metrics.index]).astype(np.float64)
+valid_data_mask = {}
+
+for subjectID in patient_left_GCS_metrics.index:
+    # Check which days have valid data across ALL pupillometry metrics
+    valid_pupil = (
+        ~patient_left_arousal_metrics.loc[subjectID].isna() &
+        ~patient_left_max_PLR_metrics.loc[subjectID].isna() &
+        ~patient_left_first_50_metrics.loc[subjectID].isna() &
+        ~patient_left_second_50_metrics.loc[subjectID].isna() &
+        ~patient_left_LOR_early_gradient_metrics.loc[subjectID].isna() &
+        ~patient_left_LOR_late_gradient_metrics.loc[subjectID].isna() &
+        ~patient_left_35_metrics.loc[subjectID].isna()
+    )
+    valid_data_mask[subjectID] = valid_pupil
+
+subject_IDs = []
+days = []
+
+for subjectID in patient_left_GCS_metrics.index:
+    n_valid = valid_data_mask[subjectID].sum()
+    subject_IDs.extend([subjectID] * n_valid)
+    days.extend((np.array(np.where(valid_data_mask[subjectID].values == 1))+1).flatten())
+
+subject_IDs = np.array(subject_IDs)
+
+patient_left_GCS_scores = np.concatenate([
+    patient_left_GCS_metrics.loc[subjectID][valid_data_mask[subjectID]].values 
+    for subjectID in patient_left_GCS_metrics.index
+]).astype(np.float64)
+patient_left_FOUR_scores = np.concatenate([
+    patient_left_FOUR_metrics.loc[subjectID][valid_data_mask[subjectID]].values 
+    for subjectID in patient_left_FOUR_metrics.index
+]).astype(np.float64)
+patient_left_SECONDS_scores = np.concatenate([
+    patient_left_SECONDS_metrics.loc[subjectID][valid_data_mask[subjectID]].values 
+    for subjectID in patient_left_SECONDS_metrics.index
+]).astype(np.float64)
 
 patient_left_arousal_scores = np.concatenate([patient_left_arousal_metrics.loc[index].dropna().values for index in patient_left_arousal_metrics.index]).astype(np.float64)
 patient_left_max_PLR_scores = np.concatenate([patient_left_max_PLR_metrics.loc[index].dropna().values for index in patient_left_max_PLR_metrics.index]).astype(np.float64)
@@ -217,7 +250,10 @@ patient_left_first_50_scores = np.concatenate([patient_left_first_50_metrics.loc
 patient_left_second_50_scores = np.concatenate([patient_left_second_50_metrics.loc[index].dropna().values for index in patient_left_second_50_metrics.index]).astype(np.float64)
 patient_left_LOR_early_gradient_scores = np.concatenate([patient_left_LOR_early_gradient_metrics.loc[index].dropna().values for index in patient_left_LOR_early_gradient_metrics.index]).astype(np.float64)
 patient_left_LOR_late_gradient_scores = np.concatenate([patient_left_LOR_late_gradient_metrics.loc[index].dropna().values for index in patient_left_LOR_late_gradient_metrics.index]).astype(np.float64)
-patient_left_35_scores = np.concatenate([patient_left_35_metrics.loc[index].dropna().values for index in patient_left_35_metrics.index]).astype(np.float64)
+patient_left_35_scores = np.concatenate([
+    patient_left_35_metrics.loc[subjectID][valid_data_mask[subjectID]].values 
+    for subjectID in patient_left_35_metrics.index
+]).astype(np.float64)
 
 data = {
     "Subject ID": subject_IDs,

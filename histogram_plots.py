@@ -58,35 +58,37 @@ columns_to_plot = ["Arousal gradient", "Max PLR", "LOR early gradient", "LOR lat
 
 # Patient selection
 selected_data = left_data_original[left_data_original["Under 3.5 mm."] == 1]
+plotting_data = selected_data[columns_to_plot]
+# plotting_data = left_data_original[columns_to_plot]
 
 
-g = sns.PairGrid(selected_data[columns_to_plot], diag_sharey=False)
+# g = sns.PairGrid(plotting_data, diag_sharey=False)
 
-# Lower triangle: scatter plots with regression line
-g.map_lower(sns.scatterplot, alpha=0.6)
-g.map_lower(sns.regplot, scatter=False, color='red', line_kws={'linewidth': 1.5})
+# # Lower triangle: scatter plots with regression line
+# g.map_lower(sns.scatterplot, alpha=0.6)
+# g.map_lower(sns.regplot, scatter=False, color='red', line_kws={'linewidth': 1.5})
 
-# Diagonal: histograms
-g.map_diag(sns.histplot, kde=True)
+# # Diagonal: histograms
+# g.map_diag(sns.histplot, kde=True)
 
-# Upper triangle: correlation coefficients
-g.map_upper(Spearman_corrfunc)
+# # Upper triangle: correlation coefficients
+# g.map_upper(Spearman_corrfunc)
 
-plt.tight_layout()
+# plt.tight_layout()
 
-save_path_variance = os.getenv("save_path_variance")
+# save_path_variance = os.getenv("save_path_variance")
 
-plt.savefig(
-    os.path.join(save_path_variance, f'Correlation_histograms.pdf'),
-    dpi=300,                     
-    bbox_inches='tight',
-    format='pdf'
-)
+# plt.savefig(
+#     os.path.join(save_path_variance, f'Correlation_histograms_all.pdf'),
+#     dpi=300,                     
+#     bbox_inches='tight',
+#     format='pdf'
+# )
 
 #######################################################################
 # With one day delay
-
-first_and_second_day_data = left_data_with_dates[left_data_with_dates["Day"].isin([1, 2])]
+selected_data = left_data_with_dates[left_data_with_dates["Under 3.5 mm."] == 1]
+first_and_second_day_data = selected_data[selected_data["Day"].isin([1, 2])]
 first_and_second_day_data['individuel_dates'] = pd.to_datetime(first_and_second_day_data['individuel_dates'])
 first_and_second_day_data['date_diff'] = first_and_second_day_data.groupby('Subject ID')['individuel_dates'].diff().dt.days
 
@@ -146,7 +148,7 @@ plt.tight_layout()
 save_path_variance = os.getenv("save_path_variance")
 
 plt.savefig(
-    os.path.join(save_path_variance, f'Correlation_histograms_day_delay.pdf'),
+    os.path.join(save_path_variance, f'Correlation_histograms_day_delay_under_3.5mm.pdf'),
     dpi=300,                     
     bbox_inches='tight',
     format='pdf'
