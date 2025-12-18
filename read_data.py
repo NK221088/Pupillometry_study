@@ -9,10 +9,10 @@ load_dotenv()
 
 HC_left_path = os.getenv("HC_left_data_path")
 HC_right_path = os.getenv("HC_right_data_path")
-# patient_left_path = os.getenv("patient_left_data_path")
-# patient_right_path = os.getenv("patient_right_data_path")
-patient_left_path = os.getenv("patient_left_250_data_path")
-patient_right_path = os.getenv("patient_right_250_data_path")
+patient_left_path = os.getenv("patient_left_data_path")
+patient_right_path = os.getenv("patient_right_data_path")
+# patient_left_path = os.getenv("patient_left_250_data_path")
+# patient_right_path = os.getenv("patient_right_250_data_path")
 
 zero_start_time = 0
 light_on_time = 3
@@ -316,3 +316,8 @@ left_data_with_dates = left_data_original.merge(
     on=['Subject ID', 'Day'], 
     how='left'
 )
+mismatched = []
+for id in np.unique(left_data_original["Subject ID"].values):
+    if dates_data_original[dates_data_original["Subject ID"] == id].shape[0] != left_data_original[left_data_original["Subject ID"] == id].shape[0]:
+        mismatched.append(id)
+print("DEBUG")

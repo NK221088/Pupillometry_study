@@ -13,6 +13,8 @@ followup_numbers = np.array([])
 id_columns = np.array([])
 
 for id in np.unique(dates["record_id"]):
+    if id == 72:
+        print("debug")
     ind_data = dates[dates['record_id'] == id][:int(dates[dates['record_id'] == id]["redcap_repeat_instance"].iloc[-1])+1] if not np.isnan(dates[dates['record_id'] == id]["redcap_repeat_instance"].iloc[-1]) else dates[dates['record_id'] == id][:1]
     ind_dates = np.concatenate([ind_data["date_examination"].iloc[:1].values, ind_data["date_examination_v2"].iloc[1:].values])
     followup_number = np.concatenate([np.array([0]), ind_data["redcap_repeat_instance"][1:].values.astype(int)])
