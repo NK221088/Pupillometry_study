@@ -165,6 +165,31 @@ patient_right_SECONDS_metrics = pd.concat([
 patient_right_SECONDS_metrics = patient_right_SECONDS_metrics.replace(SECONDS_conversion_dict)
 
 ##################################################################################
+# Clinical metrics:atient_right_etiology = {sheet_name: patient_right_text_data[sheet_name].loc["Etiology"] for sheet_name in patient_right_data.keys()}
+patient_left_sedation_metrics = pd.concat([
+    patient_left_text_data[sheet_name].loc["Sedation"] 
+    for sheet_name in patient_left_data.keys()
+], axis=1, keys=patient_left_data.keys())
+
+patient_right_sedation_metrics = pd.concat([
+    patient_right_text_data[sheet_name].loc["Sedation"] 
+    for sheet_name in patient_right_data.keys()
+], axis=1, keys=patient_right_data.keys())
+
+patient_left_etiology_metrics = {patient_id: patient_left_data[list(patient_left_data.keys())[0]][patient_id].loc["Etiology"] for patient_id in patient_left_data[list(patient_left_data.keys())[0]].columns}
+patient_right_etiology_metrics = {patient_id: patient_right_data[list(patient_right_data.keys())[0]][patient_id].loc["Etiology"] for patient_id in patient_right_data[list(patient_right_data.keys())[0]].columns}
+
+patient_left_raw_values = {sheet_name: patient_left_numeric_data[sheet_name] for sheet_name in patient_left_data.keys()}
+
+patient_left_raw_values = pd.concat([
+    patient_left_numeric_data[sheet_name]
+    for sheet_name in patient_left_data.keys()
+], axis=1, keys=patient_left_data.keys())
+
+patient_left_raw_values = {sheet_name: (patient_left_arousal_interval_data[sheet_name].max() - patient_left_arousal_interval_data[sheet_name].iloc[0]).clip(lower=0) for sheet_name in patient_left_data.keys()}
+
+
+##################################################################################
 # Find patients with pupil size constantly below 3.5:
 patient_left_35 = {sheet_name: patient_left_numeric_data[sheet_name].max() < 3.5 for sheet_name in patient_left_data.keys()} # Find the highest value
 patient_right_35 = {sheet_name: patient_right_numeric_data[sheet_name].max() < 3.5 for sheet_name in patient_right_data.keys()} # Find the highest value
