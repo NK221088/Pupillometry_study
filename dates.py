@@ -52,7 +52,6 @@ NPI_data_cleaned["redcap_repeat_instance"] = (
     .add(1)
 )
 
-print("debug")
 # dates_path = os.getenv("dates_data_path")
 # dates = pd.read_csv(dates_path)
 

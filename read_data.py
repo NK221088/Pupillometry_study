@@ -22,6 +22,11 @@ LOR_late_start_time = 8
 LOR_late_end_time = 13
 
 HC_left_data = pd.read_excel(HC_left_path, index_col=0, sheet_name=None)
+HC_left_zero_indices = {sheet_name: np.where(HC_left_data[sheet_name].index == 0)[0][0] for sheet_name in HC_left_data.keys()} # Finding the first time index
+HC_left_closest_timestamp_LOR_early_start_time = {sheet_name: np.argmin(np.abs((np.array([idx for idx in HC_left_data[sheet_name].index if isinstance(idx, (int, float))]) - LOR_early_start_time))) for sheet_name in HC_left_data.keys()} # Find the time index closest to LOR early start time
+HC_left_text_data = {sheet_name: HC_left_data[sheet_name].iloc[:HC_left_zero_indices[sheet_name]] for sheet_name in HC_left_data.keys()} # Extract text data -> Everything before first time index
+HC_left_numeric_data = {sheet_name: HC_left_data[sheet_name].iloc[HC_left_zero_indices[sheet_name]:].apply(pd.to_numeric, errors='coerce') for sheet_name in HC_left_data.keys()}
+
 HC_right_data = pd.read_excel(HC_right_path, index_col=0, sheet_name=None)
 
 patient_left_data = pd.read_excel(patient_left_path, index_col=0, sheet_name=None)
