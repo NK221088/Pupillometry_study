@@ -1,0 +1,60 @@
+from read_data import left_data_original
+from read_data import left_data_with_dates
+import seaborn as sns
+import matplotlib.pyplot as plt
+import numpy as np
+from scipy import stats
+import os
+import pandas as pd
+from histogram_plots import Pearson_corrfunc, Spearman_corrfunc
+from dates import NPI_data_cleaned
+
+
+NPI_distribution_plots_path = os.getenv("NPI_distribution_plots_path")
+# Create the pairplot
+columns_to_plot = ["Arousal gradient", "Max PLR", "LOR early gradient", "LOR late gradient", "FOUR scores", "SECONDS scores", "GCS scores"]
+
+g = sns.PairGrid(NPI_data_cleaned, 
+                 x_vars=[col for col in NPI_data_cleaned.columns if '_Day1' in col],
+                 y_vars=[col for col in NPI_data_cleaned.columns if '_Day2' in col])
+
+# Map all plots: scatter with regression line
+g.map(sns.scatterplot, alpha=0.6)
+g.map(sns.regplot, scatter=False, color='red', line_kws={'linewidth': 1.5})
+
+# Add correlation coefficients to each subplot
+for i, y_var in enumerate(g.y_vars):
+    for j, x_var in enumerate(g.x_vars):
+        ax = g.axes[i, j]
+        x_data = NPI_data_cleaned[x_var].values
+        y_data = NPI_data_cleaned[y_var].values
+        
+        # Call your correlation function
+        mask = ~np.isnan(x_data) & ~np.isnan(y_data)
+        if mask.sum() >= 2:
+            r, p = stats.spearmanr(x_data[mask], y_data[mask])
+            
+            if p < 0.001:
+                sig = '***'
+            elif p < 0.01:
+                sig = '**'
+            elif p < 0.05:
+                sig = '*'
+            else:
+                sig = 'ns'
+            
+            ax.text(0.05, 0.95, rf'$\rho$ = {r:.2f}{sig}',
+                   transform=ax.transAxes,
+                   ha='left', va='top', fontsize=10,
+                   bbox=dict(boxstyle='round', facecolor='white', alpha=0.8))
+
+plt.tight_layout()
+
+save_path_variance = os.getenv("save_path_variance")
+
+plt.savefig(
+    os.path.join(save_path_variance, f'Correlation_histograms_day_delay_under_3.5mm.pdf'),
+    dpi=300,                     
+    bbox_inches='tight',
+    format='pdf'
+)
