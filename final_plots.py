@@ -587,6 +587,12 @@ plt.close()
 
 #################################################################################################################
 
+# --------------------------------------------------
+# Assign consciousness state to NPI_data_cleaned
+# --------------------------------------------------
+
+NPI_data_cleaned["SECONDs"] = pd.NA
+
 for day, day_dict in consciousness_data_per_day.items():
     for state, df in day_dict.items():
         patient_ids = df.columns
@@ -597,7 +603,11 @@ for day, day_dict in consciousness_data_per_day.items():
         )
 
         NPI_data_cleaned.loc[mask, "SECONDs"] = state
-    
+
+
+# --------------------------------------------------
+# Plot
+# --------------------------------------------------
 
 group_colors = {
     "Coma": "#FFD700",
@@ -606,29 +616,75 @@ group_colors = {
     "eMCS": "tab:orange",
 }
 
-plt.figure(figsize=(6, 4))
+fig, ax = plt.subplots(figsize=(6, 4))
 
-plt.scatter(
+ax.scatter(
     NPI_data_cleaned["redcap_repeat_instance"],
-    NPI_data_cleaned["npi_left_merged"],
+    NPI_data_cleaned[f"npi_{save_path_time.split(os.sep)[-1].lower()}_merged"],
     c=NPI_data_cleaned["SECONDs"].map(group_colors),
-    alpha=0.7,
+    s=30,
+    alpha=0.6,
+    edgecolor="black",
+    linewidth=0.3,
+    zorder=3,
 )
 
-plt.gca().xaxis.set_major_locator(MaxNLocator(integer=True))
+# Clinical threshold
+ax.axhline(
+    y=3,
+    color="black",
+    linestyle="--",
+    linewidth=1,
+    alpha=0.8,
+    zorder=2,
+)
+
+# Axes formatting
+ax.xaxis.set_major_locator(MaxNLocator(integer=True))
+ax.spines["top"].set_visible(False)
+ax.spines["right"].set_visible(False)
+ax.tick_params(axis="both", labelsize=11)
+
+ax.set_xlabel("Day", fontsize=13)
+ax.set_ylabel("NPI value", fontsize=13)
+
+# --------------------------------------------------
+# Figure-level legend (outside plot)
+# --------------------------------------------------
 
 legend_handles = [
-    plt.Line2D([0], [0], marker="o", linestyle="",
-               color=color, label=group)
+    plt.Line2D(
+        [0], [0],
+        marker="o",
+        linestyle="",
+        markerfacecolor=color,
+        markeredgecolor="black",
+        markersize=6,
+        label=group,
+    )
     for group, color in group_colors.items()
 ]
 
-plt.axhline(y=3, color='black', linestyle='--')
+fig.legend(
+    handles=legend_handles,
+    title="Consciousness group\n",
+    fontsize=11,
+    title_fontsize=12,
+    frameon=False,
+    loc="upper center",
+    bbox_to_anchor=(0.5, 1.03),
+    ncol=len(group_colors),
+    labelspacing=0.8,
+    handletextpad=0.6,
+)
 
-plt.xlabel("Day")
-plt.ylabel("NPI values")
-plt.legend(handles=legend_handles, title=f"Consciousness NPI {save_path_time.split(os.sep)[-1]}")
-plt.tight_layout()
-fig_path = os.path.join(save_path_time, f"NPI_group_responses_{save_path_time.split(os.sep)[-1]}.pdf")
-plt.savefig(fig_path, dpi=300, bbox_inches="tight")
-plt.close()
+# Reserve space for legend
+fig.tight_layout(rect=[0.02, 0.02, 0.98, 0.85])
+
+# Save
+fig_path = os.path.join(
+    save_path_time,
+    f"NPI_group_responses_{save_path_time.split(os.sep)[-1]}.pdf"
+)
+fig.savefig(fig_path, dpi=300, bbox_inches="tight")
+plt.close(fig)
