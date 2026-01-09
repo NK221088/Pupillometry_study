@@ -7,6 +7,7 @@ load_dotenv()
 
 NPI_data_path = os.getenv("NPI_data_path")
 NPI_data = pd.read_excel(NPI_data_path)
+# NPI_data = pd.read_csv(rf"L:\AuditData\CONNECT-ME\Nikolai\pupillometry\Data\NPI_measurements.csv")
 merging_columns = [
     "date_examination",
     "light_off_performed",
@@ -24,6 +25,7 @@ for column in merging_columns:
             NPI_data[f"{column}"]
             .combine_first(NPI_data[f"{column}_2"])
         )
+
 columns_to_keep = ["record_id", "redcap_repeat_instance"] + [f"{col}_merged" for col in merging_columns]
 NPI_data_cleaned = NPI_data[columns_to_keep] # Remove suffix from light_off_performed_merged column
 NPI_data_cleaned["light_off_performed_merged"] = (
@@ -33,6 +35,12 @@ NPI_data_cleaned["light_off_performed_merged"] = (
 NPI_data_cleaned["redcap_repeat_instance"] = ( # Ensure first recording is marked as 0
     NPI_data_cleaned["redcap_repeat_instance"]
     .fillna(0)
+)
+mask = NPI_data_cleaned["record_id"] == 213
+cols = ["npi_left_merged"]
+
+NPI_data_cleaned.loc[mask, cols] = (
+    NPI_data_cleaned.loc[mask, cols].replace(0, np.nan)
 )
 NPI_data_cleaned["redcap_repeat_instance"]  += 1 # Shift follow-up numbers to start from 1
 NPI_data_cleaned = NPI_data_cleaned[
@@ -52,6 +60,7 @@ NPI_data_cleaned["redcap_repeat_instance"] = (
     .add(1)
 )
 
+print("debug")
 # dates_path = os.getenv("dates_data_path")
 # dates = pd.read_csv(dates_path)
 
