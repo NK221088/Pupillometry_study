@@ -4,17 +4,9 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import os
 import math
-import matplotlib.pyplot as plt
 from collections import defaultdict
-import pandas as pd
-from collections import defaultdict
-import math
-import matplotlib.pyplot as plt
-import pandas as pd
-import os
 import re
-from matplotlib.ticker import MaxNLocator
-
+from matplotlib.ticker import MultipleLocator
 
 patient_left_data = {
     i: value
@@ -151,13 +143,6 @@ for patient_id in all_patient_ids:
         patient_right_individual_text_data[patient_id]
         .loc[:, visit_order]
     )
-    
-    
-from collections import defaultdict
-from matplotlib.ticker import MultipleLocator
-import matplotlib.pyplot as plt
-import os
-import pandas as pd
 
 save_path_time = os.getenv("save_path_time_left")
 
@@ -353,792 +338,558 @@ fig_path = os.path.join(
 fig.savefig(fig_path, dpi=600, bbox_inches="tight")
 plt.close(fig)
 
-# # save
-# fig_path = os.path.join(
-#     os.getenv("save_path_time"),
-#     "NPI_group_responses_left_right.jpg",
-# )
-# fig.savefig(fig_path, dpi=600, bbox_inches="tight")
+################################################################################################################
 
-"""
-Left = False
-if Left:
-    etiology_metrics = patient_left_etiology_metrics
-    sedation_metrics = patient_left_sedation_metrics
-    consciousness_metrics = patient_left_consciousness_metrics
-    raw_values = patient_left_raw_values
-    individual_raw_data = patient_left_individual_raw_data
-    save_path_time = os.getenv("save_path_time_left")
-else:
-    etiology_metrics = patient_right_etiology_metrics
-    sedation_metrics = patient_right_sedation_metrics
-    consciousness_metrics = patient_right_consciousness_metrics
-    raw_values = patient_right_raw_values
-    individual_raw_data = patient_right_individual_raw_data
-    save_path_time = os.getenv("save_path_time_right")
+###################################
+# Etiology coding
+###################################
 
-consciousness_coding = {
-    "C": "Coma",
-    "E": "eMCS",
-    "M+": "MCS+",
-    "M-": "MCS-",
-    "U": "UWS",
-}
-
-consciousness_colors = {
-    "Coma":   "#4D4D4D",   # dark grey — baseline / deepest impairment
-    "UWS":    "#0072B2",   # strong blue
-    "MCS-":   "#009E73",   # bluish green
-    "MCS+":   "#D55E00",   # vermillion
-    "eMCS":   "#CC79A7",   # reddish purple
-}
+patient_left_etiology_metrics = {key: [value[0]] for key, value in patient_left_etiology_metrics.items()}
+patient_right_etiology_metrics = {key: [value[0]] for key, value in patient_right_etiology_metrics.items()}
+patient_left_sedation_metrics = {day: {key: [value[0]] for key, value in day_dict.items()} for day, day_dict in patient_left_sedation_metrics.items()}
+patient_right_sedation_metrics = {day: {key: [value[0]] for key, value in day_dict.items()} for day, day_dict in patient_right_sedation_metrics.items()}
 
 
-# --------------------------------------------------
-# Collect data per day
-# --------------------------------------------------
+laterals = ["left", "right"]
+save_path_all = {"left": os.getenv("save_path_time_left"), "right": os.getenv("save_path_time_right")}
+etiology_metrics_all = {"left": patient_left_etiology_metrics, "right": patient_right_etiology_metrics}
+sedation_metrics_all = {"left": patient_left_sedation_metrics, "right": patient_right_sedation_metrics}
+consciousness_metrics_all = {"left": patient_left_consciousness_metrics, "right": patient_right_consciousness_metrics}
+raw_values_all = {"left": patient_left_raw_values, "right": patient_right_raw_values}
+individual_raw_data_all = {"left": patient_left_individual_raw_data, "right": patient_right_individual_raw_data}    
 
-consciousness_data_per_day = defaultdict(dict)
+for lateral in laterals:
+    save_path = save_path_all[lateral]
+    df_etiology = (
+    pd.DataFrame.from_dict(
+        etiology_metrics_all[lateral],
+        orient="index",
+        columns=["etiology_code"],
+        )
+        .reset_index()
+        .rename(columns={"index": "patient_id"})
+    )
 
-for day in sorted(raw_values.keys()):
+    df_etiology["patient_id"] = df_etiology["patient_id"].astype(str)
 
-    consciousness_groups = {
-        "Coma": [],
-        "UWS": [],
-        "MCS+": [],
-        "MCS-": [],
-        "eMCS": [],
-    }
-
-    day_consciousness_metrics = consciousness_metrics.get(day, {})
-    for patient_id, codes in day_consciousness_metrics.items():
-        if not codes:
-            continue
-        state = consciousness_coding.get(codes)
-        if state is not None:
-            consciousness_groups[state].append(patient_id)
-
-    for con_state, patient_ids in consciousness_groups.items():
-        patient_series = []
-
-        for patient_id in patient_ids:
-            df = individual_raw_data.get(patient_id)
-
-            if df is None or day not in df.columns:
-                continue
-
-            series = df.loc[:, day]
-            series.name = patient_id
-            patient_series.append(series)
-
-        if patient_series:
-            consciousness_data_per_day[day][con_state] = pd.concat(
-                patient_series, axis=1
-            )
-
-from matplotlib.ticker import MultipleLocator
-
-NPI_data_cleaned["SECONDs"] = pd.NA
-
-for day, day_dict in consciousness_data_per_day.items():
-    for state, df in day_dict.items():
-        patient_ids = df.columns
-
-        mask = (
-            (NPI_data_cleaned["redcap_repeat_instance"] == day) &
-            (NPI_data_cleaned["record_id"].isin(patient_ids))
+    df_etiology.to_csv(
+        os.path.join(
+            save_path,
+            f"etiology_metrics_{save_path.split(os.sep)[-1]}.csv",
+        ),
+        index=False,
         )
 
-        NPI_data_cleaned.loc[mask, "SECONDs"] = state
+    rows = []
 
+    for day, day_dict in sedation_metrics_all[lateral].items():
+        for patient_id, codes in day_dict.items():
+            if not codes:
+                continue
+            rows.append({
+                "day": day,
+                "patient_id": str(patient_id),
+                "sedation_code": codes[0],
+            })
 
-# --------------------------------------------------
-# Plot
-# --------------------------------------------------
+    df_sedation = pd.DataFrame(rows)
 
-fig, ax = plt.subplots(figsize=(6, 4))
-
-ax.scatter(
-    NPI_data_cleaned["redcap_repeat_instance"],
-    NPI_data_cleaned[f"npi_{save_path_time.split(os.sep)[-1].lower()}_merged"],
-    c=NPI_data_cleaned["SECONDs"].map(consciousness_colors),
-    s=30,
-    alpha=1,
-    edgecolor="black",
-    linewidth=0.3,
-    zorder=3,
-)
-
-# Clinical threshold
-ax.axhline(
-    y=3,
-    color="black",
-    linestyle="--",
-    linewidth=1,
-    alpha=1,
-    zorder=2,
-)
-
-# Axes formatting
-ax.xaxis.set_major_locator(MultipleLocator(5))
-ax.spines["top"].set_visible(False)
-ax.spines["right"].set_visible(False)
-ax.tick_params(axis="both", labelsize=11)
-
-ax.set_xlabel("Day", fontsize=13, labelpad=12)
-ax.set_ylabel("NPI value", fontsize=13)
-
-
-# --------------------------------------------------
-# Figure-level legend (outside plot)
-# --------------------------------------------------
-
-legend_handles = [
-    plt.Line2D(
-        [0], [0],
-        marker="o",
-        linestyle="",
-        markerfacecolor=color,
-        markeredgecolor="black",
-        markersize=6,
-        label=group,
+    df_sedation.to_csv(
+        os.path.join(
+            save_path,
+            f"sedation_metrics_{save_path.split(os.sep)[-1]}.csv",
+        ),
+        index=False,
     )
-    for group, color in consciousness_colors.items()
-]
 
-fig.legend(
-    handles=legend_handles,
-    title="Consciousness group\n",
-    fontsize=11,
-    title_fontsize=12,
-    frameon=False,
-    loc="upper center",
-    bbox_to_anchor=(0.5, 1.03),
-    ncol=len(consciousness_colors),
-    labelspacing=0.8,
-    handletextpad=0.6,
-)
+    rows = []
 
-# Reserve space for legend
-fig.tight_layout(rect=[0.02, 0.02, 0.98, 0.85])
+    for day, day_dict in consciousness_metrics_all[lateral].items():
+        for patient_id, code in day_dict.items():
+            if code is None:
+                continue
+            rows.append({
+                "day": day,
+                "patient_id": str(patient_id),
+                "consciousness_code": code,
+            })
 
-# Save
-fig_path = os.path.join(
-    save_path_time,
-    f"NPI_group_responses_{save_path_time.split(os.sep)[-1]}.jpg"
-)
-fig.savefig(fig_path, dpi=600, bbox_inches="tight")
-plt.close(fig)
+    df_consciousness = pd.DataFrame(rows)
+
+    df_consciousness.to_csv(
+        os.path.join(
+            save_path,
+            f"consciousness_metrics_{save_path.split(os.sep)[-1]}.csv",
+        ),
+        index=False,
+    )
+
+
+    df_raw_long = (
+    pd.concat(raw_values_all[lateral], names=["day", "time"])
+    .reset_index()
+    .melt(
+        id_vars=["day", "time"],
+        var_name="patient_id",
+        value_name="pupil_size",
+    )
+    )
+
+    df_raw_long.to_csv(
+        os.path.join(
+            save_path,
+            f"raw_values_{save_path.split(os.sep)[-1]}.csv",
+        ),
+        index=False,
+    )
+
+    df_individual_long = (
+        pd.concat(individual_raw_data_all[lateral], names=["day", "time"])
+        .reset_index()
+        .melt(
+            id_vars=["day", "time"],
+            var_name="patient_id",
+            value_name="pupil_size",
+        )
+    )
+
+    df_individual_long.to_csv(
+        os.path.join(
+            save_path,
+            f"individual_raw_values_{save_path.split(os.sep)[-1]}.csv",
+        ),
+        index=False,
+    )
+
+    
+    
+    etiology_metrics = etiology_metrics_all[lateral]
+    sedation_metrics = sedation_metrics_all[lateral]
+    consciousness_metrics = consciousness_metrics_all[lateral]
+    raw_values = raw_values_all[lateral]
+    individual_raw_data = individual_raw_data_all[lateral]
+    
+    etiology_coding = {
+        0: "Cardiac cause",
+        1: "cerebrovaskulær",
+        2: "cerebrovaskulær",
+        3: "cerebrovaskulær",
+        4: "cerebrovaskulær",
+        5: "TBI",
+        8: "Other",
+        9: "Other",
+        10: "Other",
+        13: "Other",
+        14: "Other",
+        15: "Other",
+        16: "Other",
+        20: "Other",
+        21: "Other",
+    }
+
+    group_colors = {
+    "Cardiac cause": "#E69F00",   # muted amber
+    "cerebrovaskulær": "#0072B2", # dark blue
+    "TBI": "#D55E00",             # vermillion
+    "Other": "#CC79A7",           # muted magenta
+    }
+
+    # --------------------------------------------------
+    # Collect data per day
+    # --------------------------------------------------
+
+    etiology_data_per_day = defaultdict(dict)
+
+    for day in sorted(raw_values.keys()):
+
+        # group patients by etiology (same across days)
+        etiology_groups = {
+            "Cardiac cause": [],
+            "cerebrovaskulær": [],
+            "TBI": [],
+            "Other": [],
+        }
+
+        for patient_id, codes in etiology_metrics.items():
+            if not codes:
+                continue
+            etiology_groups[etiology_coding[int(codes[0])]].append(patient_id)
+
+        # build data matrices per etiology for this day
+        for eti_state, patient_ids in etiology_groups.items():
+            patient_series = []
+
+            for patient_id in patient_ids:
+                df = individual_raw_data.get(patient_id)
+
+                if df is None or day not in df.columns:
+                    continue
+
+                series = df.loc[:, day]
+                series.name = patient_id
+                patient_series.append(series)
+
+            if patient_series:
+                etiology_data_per_day[day][eti_state] = pd.concat(
+                    patient_series, axis=1
+                )
+
+    # --------------------------------------------------
+    # Plot: grid with 4 columns
+    # --------------------------------------------------
+
+    days = sorted(etiology_data_per_day.keys())
+    n_cols = 4
+    n_days = len(days)
+    n_rows = math.ceil(n_days / n_cols)
+
+    fig, axes = plt.subplots(
+        n_rows,
+        n_cols,
+        figsize=(4 * n_cols, 3 * n_rows),
+        sharex=True,
+        sharey=True,
+    )
+
+    axes = axes.flatten()
+
+    for ax, day in zip(axes, days):
+        for eti_state, df in etiology_data_per_day[day].items():
+            color = group_colors.get(eti_state, "gray")
+
+            for patient_id in df.columns:
+                ax.plot(
+                    df.index,
+                    df[patient_id],
+                    color=color,
+                    alpha=0.3,
+                    linewidth=1,
+                )
+
+        ax.set_title(f"Day {day}")
+        ax.set_xticks([])
+
+    # turn off unused axes
+    for ax in axes[n_days:]:
+        ax.axis("off")
+
+    # --------------------------------------------------
+    # Global labels & legend
+    # --------------------------------------------------
+
+    fig.supylabel("Pupil size")
+
+    legend_handles = [
+        plt.Line2D([0], [0], color=c, lw=2, label=k)
+        for k, c in group_colors.items()
+    ]
+    
+    fig.suptitle(
+        f"{save_path.split(os.sep)[-1]} eyes",
+        y=0.92,
+        fontsize=14,
+    )
+
+    fig.legend(
+        handles=legend_handles,
+        loc="upper center",
+        bbox_to_anchor=(0.5, 0.90),
+        ncol=len(group_colors),
+        frameon=False,
+    )
+
+    fig.tight_layout(rect=[0.02, 0.01, 0.98, 0.88])
+
+    
+    fig_path = os.path.join(save_path, f"etiology_group_pupil_responses_{save_path.split(os.sep)[-1]}.jpg")
+    plt.savefig(fig_path, dpi=600, bbox_inches="tight")
+    plt.close()
+
+    ###################################
+    # Sedation coding
+    ###################################
+
+    sedation_coding = {
+        'P': "Sedated",
+        'R': "Sedated",
+        'M': "Sedated",
+        'F': "Sedated",
+        "T": "Sedated",
+        'O': "Sedated",
+        'nan': "None",
+    }
+
+    group_colors = {
+        "Sedated": "tab:purple",
+        "None":  "#FFD700",
+    }
+
+    # --------------------------------------------------
+    # Collect data per day
+    # --------------------------------------------------
+
+    sedation_data_per_day = defaultdict(dict)
+
+    for day in sorted(raw_values.keys()):
+
+        sedation_groups = {
+        "Sedated" :  [],
+        "None" :  [],
+        }
+
+        day_sedation_metrics = sedation_metrics.get(day, {})
+        for patient_id, codes in day_sedation_metrics.items():
+            if not codes:
+                continue
+            state = sedation_coding.get(codes[0])
+            if state is not None:
+                sedation_groups[state].append(patient_id)
+
+        for sed_state, patient_ids in sedation_groups.items():
+            patient_series = []
+
+            for patient_id in patient_ids:
+                df = individual_raw_data.get(patient_id)
+
+                if df is None or day not in df.columns:
+                    continue
+
+                series = df.loc[:, day]
+                series.name = patient_id
+                patient_series.append(series)
+
+            if patient_series:
+                sedation_data_per_day[day][sed_state] = pd.concat(
+                    patient_series, axis=1
+                )
+
+    # --------------------------------------------------
+    # Plot: grid with 4 columns
+    # --------------------------------------------------
+
+    days = sorted(sedation_data_per_day.keys())
+    n_cols = 4
+    n_days = len(days)
+    n_rows = math.ceil(n_days / n_cols)
+
+    fig, axes = plt.subplots(
+        n_rows,
+        n_cols,
+        figsize=(4 * n_cols, 3 * n_rows),
+        sharex=True,
+        sharey=True,
+    )
+
+    axes = axes.flatten()
+
+    for ax, day in zip(axes, days):
+        for sed_state, df in sedation_data_per_day[day].items():
+            color = group_colors.get(sed_state, "gray")
+
+            for patient_id in df.columns:
+                ax.plot(
+                    df.index,
+                    df[patient_id],
+                    color=color,
+                    alpha=0.3,
+                    linewidth=1,
+                )
+
+        ax.set_title(f"Day {day}")
+        ax.set_xticks([])
+
+    for ax in axes[n_days:]:
+        ax.axis("off")
+
+    # --------------------------------------------------
+    # Global labels & legend
+    # --------------------------------------------------
+
+    fig.supylabel("Pupil size")
+
+    legend_handles = [
+        plt.Line2D([0], [0], color=c, lw=2, label=k)
+        for k, c in group_colors.items()
+    ]
+
+    fig.suptitle(
+        f"{save_path.split(os.sep)[-1]} eyes",
+        y=0.92,
+        fontsize=14,
+    )
+
+    fig.legend(
+        handles=legend_handles,
+        loc="upper center",
+        bbox_to_anchor=(0.5, 0.90),
+        ncol=len(group_colors),
+        frameon=False,
+    )
+
+    fig.tight_layout(rect=[0.02, 0.01, 0.98, 0.88])
+
+    fig_path = os.path.join(
+        save_path,
+        f"sedation_group_pupil_responses_{save_path.split(os.sep)[-1]}.jpg",
+    )
+    plt.savefig(fig_path, dpi=600, bbox_inches="tight")
+    plt.close()
+
+    ###################################
+    # Consciousness coding
+    ###################################
     
 
-# --------------------------------------------------
-# Etiology coding
-# --------------------------------------------------
+    hc_df = HC_left_numeric_data["Ark1"]
 
-# etiology_coding = {
-#     0: "Cardiac cause",
-#     1: "cerebrovaskulær",
-#     2: "cerebrovaskulær",
-#     3: "cerebrovaskulær",
-#     4: "cerebrovaskulær",
-#     5: "TBI",
-#     8: "Other",
-#     9: "Other",
-#     10: "Other",
-#     13: "Other",
-#     14: "Other",
-#     15: "Other",
-#     16: "Other",
-#     20: "Other",
-#     21: "Other",
-# }
-
-# group_colors = {
-#     "Cardiac cause": "#FFD700",
-#     "cerebrovaskulær": "tab:blue",
-#     "TBI": "tab:orange",
-#     "Other": "tab:purple",
-# }
-
-# # --------------------------------------------------
-# # Collect data per day
-# # --------------------------------------------------
-
-# etiology_data_per_day = defaultdict(dict)
-
-# for day in sorted(raw_values.keys()):
-
-#     # group patients by etiology (same across days)
-#     etiology_groups = {
-#         "Cardiac cause": [],
-#         "cerebrovaskulær": [],
-#         "TBI": [],
-#         "Other": [],
-#     }
-
-#     for patient_id, codes in etiology_metrics.items():
-#         if not codes:
-#             continue
-#         etiology_groups[etiology_coding[int(codes[0])]].append(patient_id)
-
-#     # build data matrices per etiology for this day
-#     for eti_state, patient_ids in etiology_groups.items():
-#         patient_series = []
-
-#         for patient_id in patient_ids:
-#             df = individual_raw_data.get(patient_id)
-
-#             if df is None or day not in df.columns:
-#                 continue
-
-#             series = df.loc[:, day]
-#             series.name = patient_id
-#             patient_series.append(series)
-
-#         if patient_series:
-#             etiology_data_per_day[day][eti_state] = pd.concat(
-#                 patient_series, axis=1
-#             )
-
-# # --------------------------------------------------
-# # Plot: grid with 4 columns
-# # --------------------------------------------------
-
-# days = sorted(etiology_data_per_day.keys())
-# n_cols = 4
-# n_days = len(days)
-# n_rows = math.ceil(n_days / n_cols)
-
-# fig, axes = plt.subplots(
-#     n_rows,
-#     n_cols,
-#     figsize=(4 * n_cols, 3 * n_rows),
-#     sharex=True,
-#     sharey=True,
-# )
-
-# axes = axes.flatten()
-
-# for ax, day in zip(axes, days):
-#     for eti_state, df in etiology_data_per_day[day].items():
-#         color = group_colors.get(eti_state, "gray")
-
-#         for patient_id in df.columns:
-#             ax.plot(
-#                 df.index,
-#                 df[patient_id],
-#                 color=color,
-#                 alpha=0.3,
-#                 linewidth=1,
-#             )
-
-#     ax.set_title(f"Day {day}")
-
-# # turn off unused axes
-# for ax in axes[n_days:]:
-#     ax.axis("off")
-
-# # --------------------------------------------------
-# # Global labels & legend
-# # --------------------------------------------------
-
-# fig.supxlabel("Time (s)")
-# fig.supylabel("Pupil size")
-
-# legend_handles = [
-#     plt.Line2D([0], [0], color=c, lw=2, label=k)
-#     for k, c in group_colors.items()
-# ]
-
-# fig.legend(
-#     handles=legend_handles,
-#     title=f"Etiology group {save_path_time.split(os.sep)[-1]}",
-#     loc="upper center",
-#     ncol=len(group_colors),
-# )
-
-# # Reserve space for legend (top) and x-label (bottom)
-# fig.tight_layout(rect=[0.02, 0.01, 0.98, 0.93])
-# fig_path = os.path.join(save_path_time, f"etiology_group_pupil_responses_{save_path_time.split(os.sep)[-1]}.pdf")
-# plt.savefig(fig_path, dpi=300, bbox_inches="tight")
-# plt.close()
-
-#################################################################################################################
-
-
-
-# --------------------------------------------------
-# Consciousness coding
-# --------------------------------------------------
-
-hc_df = HC_left_numeric_data["Ark1"]
-
-consciousness_coding = {
-    "C": "Coma",
-    "E": "eMCS",
-    "M+": "MCS+",
-    "M-": "MCS-",
-    "U": "UWS",
-}
-
-consciousness_colors = {
-    "Coma":   "#4D4D4D",   # dark grey — baseline / deepest impairment
-    "UWS":    "#0072B2",   # strong blue
-    "MCS-":   "#009E73",   # bluish green
-    "MCS+":   "#D55E00",   # vermillion
-    "eMCS":   "#CC79A7",   # reddish purple
-}
-
-
-# --------------------------------------------------
-# Collect data per day
-# --------------------------------------------------
-
-consciousness_data_per_day = defaultdict(dict)
-
-for day in sorted(raw_values.keys()):
-
-    consciousness_groups = {
-        "Coma": [],
-        "UWS": [],
-        "MCS+": [],
-        "MCS-": [],
-        "eMCS": [],
+    consciousness_coding = {
+        "C": "Coma",
+        "E": "eMCS",
+        "M+": "MCS+",
+        "M-": "MCS-",
+        "U": "UWS",
     }
 
-    day_consciousness_metrics = consciousness_metrics.get(day, {})
-    for patient_id, codes in day_consciousness_metrics.items():
-        if not codes:
-            continue
-        state = consciousness_coding.get(codes)
-        if state is not None:
-            consciousness_groups[state].append(patient_id)
+    consciousness_colors = {
+        "Coma":   "#4D4D4D",   # dark grey — baseline / deepest impairment
+        "UWS":    "#0072B2",   # strong blue
+        "MCS-":   "#009E73",   # bluish green
+        "MCS+":   "#D55E00",   # vermillion
+        "eMCS":   "#CC79A7",   # reddish purple
+    }
 
-    for con_state, patient_ids in consciousness_groups.items():
-        patient_series = []
 
-        for patient_id in patient_ids:
-            df = individual_raw_data.get(patient_id)
+    # --------------------------------------------------
+    # Collect data per day
+    # --------------------------------------------------
 
-            if df is None or day not in df.columns:
+    consciousness_data_per_day = defaultdict(dict)
+
+    for day in sorted(raw_values.keys()):
+
+        consciousness_groups = {
+            "Coma": [],
+            "UWS": [],
+            "MCS+": [],
+            "MCS-": [],
+            "eMCS": [],
+        }
+
+        day_consciousness_metrics = consciousness_metrics.get(day, {})
+        for patient_id, codes in day_consciousness_metrics.items():
+            if not codes:
                 continue
+            state = consciousness_coding.get(codes)
+            if state is not None:
+                consciousness_groups[state].append(patient_id)
 
-            series = df.loc[:, day]
-            series.name = patient_id
-            patient_series.append(series)
+        for con_state, patient_ids in consciousness_groups.items():
+            patient_series = []
 
-        if patient_series:
-            consciousness_data_per_day[day][con_state] = pd.concat(
-                patient_series, axis=1
-            )
+            for patient_id in patient_ids:
+                df = individual_raw_data.get(patient_id)
 
-from matplotlib.ticker import MultipleLocator
+                if df is None or day not in df.columns:
+                    continue
 
-NPI_data_cleaned["SECONDs"] = pd.NA
+                series = df.loc[:, day]
+                series.name = patient_id
+                patient_series.append(series)
 
-for day, day_dict in consciousness_data_per_day.items():
-    for state, df in day_dict.items():
-        patient_ids = df.columns
+            if patient_series:
+                consciousness_data_per_day[day][con_state] = pd.concat(
+                    patient_series, axis=1
+                )
 
-        mask = (
-            (NPI_data_cleaned["redcap_repeat_instance"] == day) &
-            (NPI_data_cleaned["record_id"].isin(patient_ids))
+    # --------------------------------------------------
+    # Plot: grid with 4 columns
+    # --------------------------------------------------
+
+    days = sorted(consciousness_data_per_day.keys())
+    n_cols = 4
+    n_days = len(days)
+    n_rows = math.ceil(n_days / n_cols)
+
+    fig, axes = plt.subplots(
+        n_rows,
+        n_cols,
+        figsize=(4 * n_cols, 3 * n_rows),
+        sharex=True,
+        sharey=True,
+    )
+
+    axes = axes.flatten()
+
+    for ax, day in zip(axes, days):
+        for con_state, df in consciousness_data_per_day[day].items():
+            color = consciousness_colors.get(con_state, "gray")
+            
+            # plot HC data in all subplots
+            for hc_id in hc_df.columns:
+                ax.plot(
+                    hc_df.index,
+                    hc_df[hc_id],
+                    color="tab:purple",
+                    alpha=0.1,
+                    linewidth=1,
+                    zorder=0,          # push HC behind patients
+                )
+
+            for patient_id in df.columns:
+                ax.plot(
+                    df.index,
+                    df[patient_id],
+                    color=color,
+                    alpha=0.9,
+                    linewidth=1,
+                )
+
+        ax.set_title(f"Day {day}")
+        ax.set_xticks([])
+
+    for ax in axes[n_days:]:
+        ax.axis("off")
+
+    # --------------------------------------------------
+    # Global labels & legend
+    # --------------------------------------------------
+
+    fig.supylabel("Pupil size")
+
+    legend_handles = [
+        plt.Line2D([0], [0], color=c, lw=2, label=k)
+        for k, c in consciousness_colors.items()
+    ]
+
+    # Healthy controls (mean)
+    legend_handles.append(
+        plt.Line2D(
+            [0], [0],
+            color="tab:purple",
+            lw=2,
+            label="Healthy controls",
         )
-
-        NPI_data_cleaned.loc[mask, "SECONDs"] = state
-
-
-# --------------------------------------------------
-# Plot
-# --------------------------------------------------
-
-fig, ax = plt.subplots(figsize=(6, 4))
-
-ax.scatter(
-    NPI_data_cleaned["redcap_repeat_instance"],
-    NPI_data_cleaned[f"npi_{save_path_time.split(os.sep)[-1].lower()}_merged"],
-    c=NPI_data_cleaned["SECONDs"].map(consciousness_colors),
-    s=30,
-    alpha=1,
-    edgecolor="black",
-    linewidth=0.3,
-    zorder=3,
-)
-
-# Clinical threshold
-ax.axhline(
-    y=3,
-    color="black",
-    linestyle="--",
-    linewidth=1,
-    alpha=1,
-    zorder=2,
-)
-
-# Axes formatting
-ax.xaxis.set_major_locator(MultipleLocator(5))
-ax.spines["top"].set_visible(False)
-ax.spines["right"].set_visible(False)
-ax.tick_params(axis="both", labelsize=11)
-
-ax.set_xlabel("Day", fontsize=13, labelpad=12)
-ax.set_ylabel("NPI value", fontsize=13)
-
-
-# --------------------------------------------------
-# Figure-level legend (outside plot)
-# --------------------------------------------------
-
-legend_handles = [
-    plt.Line2D(
-        [0], [0],
-        marker="o",
-        linestyle="",
-        markerfacecolor=color,
-        markeredgecolor="black",
-        markersize=6,
-        label=group,
     )
-    for group, color in consciousness_colors.items()
-]
 
-fig.legend(
-    handles=legend_handles,
-    title="Consciousness group\n",
-    fontsize=11,
-    title_fontsize=12,
-    frameon=False,
-    loc="upper center",
-    bbox_to_anchor=(0.5, 1.03),
-    ncol=len(consciousness_colors),
-    labelspacing=0.8,
-    handletextpad=0.6,
-)
-
-# Reserve space for legend
-fig.tight_layout(rect=[0.02, 0.02, 0.98, 0.85])
-
-# Save
-fig_path = os.path.join(
-    save_path_time,
-    f"NPI_group_responses_{save_path_time.split(os.sep)[-1]}.jpg"
-)
-fig.savefig(fig_path, dpi=600, bbox_inches="tight")
-plt.close(fig)
-
-# --------------------------------------------------
-# Plot: grid with 4 columns
-# --------------------------------------------------
-
-days = sorted(consciousness_data_per_day.keys())
-n_cols = 4
-n_days = len(days)
-n_rows = math.ceil(n_days / n_cols)
-
-fig, axes = plt.subplots(
-    n_rows,
-    n_cols,
-    figsize=(4 * n_cols, 3 * n_rows),
-    sharex=True,
-    sharey=True,
-)
-
-axes = axes.flatten()
-
-for ax, day in zip(axes, days):
-    for con_state, df in consciousness_data_per_day[day].items():
-        color = consciousness_colors.get(con_state, "gray")
-        
-        # plot HC data in all subplots
-        for hc_id in hc_df.columns:
-            ax.plot(
-                hc_df.index,
-                hc_df[hc_id],
-                color="tab:purple",
-                alpha=0.4,
-                linewidth=1,
-                zorder=0,          # push HC behind patients
-            )
-
-        for patient_id in df.columns:
-            ax.plot(
-                df.index,
-                df[patient_id],
-                color=color,
-                alpha=0.3,
-                linewidth=1,
-            )
-
-    ax.set_title(f"Day {day}")
-
-for ax in axes[n_days:]:
-    ax.axis("off")
-
-# --------------------------------------------------
-# Global labels & legend
-# --------------------------------------------------
-
-fig.supxlabel("Time (s)")
-fig.supylabel("Pupil size")
-
-legend_handles = [
-    plt.Line2D([0], [0], color=c, lw=2, label=k)
-    for k, c in consciousness_colors.items()
-]
-
-# Healthy controls (mean)
-legend_handles.append(
-    plt.Line2D(
-        [0], [0],
-        color="tab:purple",
-        lw=2,
-        label="Healthy controls",
+    fig.suptitle(
+        f"{save_path.split(os.sep)[-1]} eyes",
+        y=0.92,
+        fontsize=14,
     )
-)
 
-fig.legend(
-    handles=legend_handles,
-    title=f"Consciousness group {save_path_time.split(os.sep)[-1]}",
-    loc="upper center",
-    ncol=len(consciousness_colors),
-)
-
-fig.tight_layout(rect=[0.02, 0.01, 0.98, 0.93])
-
-fig_path = os.path.join(
-    save_path_time,
-    f"consciousness_group_pupil_responses_{save_path_time.split(os.sep)[-1]}.pdf",
-)
-plt.savefig(fig_path, dpi=300, bbox_inches="tight")
-plt.close()
-
-
-
-#################################################################################################################
-
-# --------------------------------------------------
-# Sedation coding
-# --------------------------------------------------
-
-# sedation_coding = {
-#     'P': "Opioder",
-#     'R': "Opioder",
-#     'M': "Opioder",
-#     'F': "Opioder",
-#     "T": "Opioder",
-#     'O': "Opioder",
-#     'nan': "None",
-# }
-
-# group_colors = {
-#     "Opioder": "tab:purple",
-#     "Sedativa": "tab:blue",
-#     "None":  "#FFD700",
-# }
-
-# # --------------------------------------------------
-# # Collect data per day
-# # --------------------------------------------------
-
-# sedation_data_per_day = defaultdict(dict)
-
-# for day in sorted(raw_values.keys()):
-
-#     sedation_groups = {
-#     "Opioder" :  [],
-#     "Sedativa" :  [],
-#     "None" :  [],
-#     }
-
-#     day_sedation_metrics = sedation_metrics.get(day, {})
-#     for patient_id, codes in day_sedation_metrics.items():
-#         if not codes:
-#             continue
-#         state = sedation_coding.get(codes[0])
-#         if state is not None:
-#             sedation_groups[state].append(patient_id)
-
-#     for sed_state, patient_ids in sedation_groups.items():
-#         patient_series = []
-
-#         for patient_id in patient_ids:
-#             df = individual_raw_data.get(patient_id)
-
-#             if df is None or day not in df.columns:
-#                 continue
-
-#             series = df.loc[:, day]
-#             series.name = patient_id
-#             patient_series.append(series)
-
-#         if patient_series:
-#             sedation_data_per_day[day][sed_state] = pd.concat(
-#                 patient_series, axis=1
-#             )
-
-# # --------------------------------------------------
-# # Plot: grid with 4 columns
-# # --------------------------------------------------
-
-# days = sorted(sedation_data_per_day.keys())
-# n_cols = 4
-# n_days = len(days)
-# n_rows = math.ceil(n_days / n_cols)
-
-# fig, axes = plt.subplots(
-#     n_rows,
-#     n_cols,
-#     figsize=(4 * n_cols, 3 * n_rows),
-#     sharex=True,
-#     sharey=True,
-# )
-
-# axes = axes.flatten()
-
-# for ax, day in zip(axes, days):
-#     for sed_state, df in sedation_data_per_day[day].items():
-#         color = group_colors.get(sed_state, "gray")
-
-#         for patient_id in df.columns:
-#             ax.plot(
-#                 df.index,
-#                 df[patient_id],
-#                 color=color,
-#                 alpha=0.3,
-#                 linewidth=1,
-#             )
-
-#     ax.set_title(f"Day {day}")
-
-# for ax in axes[n_days:]:
-#     ax.axis("off")
-
-# # --------------------------------------------------
-# # Global labels & legend
-# # --------------------------------------------------
-
-# fig.supxlabel("Time (s)")
-# fig.supylabel("Pupil size")
-
-# legend_handles = [
-#     plt.Line2D([0], [0], color=c, lw=2, label=k)
-#     for k, c in group_colors.items()
-# ]
-
-# fig.legend(
-#     handles=legend_handles,
-#     title=f"Sedation group {save_path_time.split(os.sep)[-1]}",
-#     loc="upper center",
-#     ncol=len(group_colors),
-# )
-
-# fig.tight_layout(rect=[0.02, 0.01, 0.98, 0.93])
-
-# fig_path = os.path.join(
-#     save_path_time,
-#     f"sedation_group_pupil_responses_{save_path_time.split(os.sep)[-1]}.pdf",
-# )
-# plt.savefig(fig_path, dpi=300, bbox_inches="tight")
-# plt.close()
-
-
-#################################################################################################################
-
-# --------------------------------------------------
-# Assign consciousness state to NPI_data_cleaned
-# --------------------------------------------------
-
-from matplotlib.ticker import MultipleLocator
-
-NPI_data_cleaned["SECONDs"] = pd.NA
-
-for day, day_dict in consciousness_data_per_day.items():
-    for state, df in day_dict.items():
-        patient_ids = df.columns
-
-        mask = (
-            (NPI_data_cleaned["redcap_repeat_instance"] == day) &
-            (NPI_data_cleaned["record_id"].isin(patient_ids))
-        )
-
-        NPI_data_cleaned.loc[mask, "SECONDs"] = state
-
-
-# --------------------------------------------------
-# Plot
-# --------------------------------------------------
-
-fig, ax = plt.subplots(figsize=(6, 4))
-
-ax.scatter(
-    NPI_data_cleaned["redcap_repeat_instance"],
-    NPI_data_cleaned[f"npi_{save_path_time.split(os.sep)[-1].lower()}_merged"],
-    c=NPI_data_cleaned["SECONDs"].map(consciousness_colors),
-    s=30,
-    alpha=1,
-    edgecolor="black",
-    linewidth=0.3,
-    zorder=3,
-)
-
-# Clinical threshold
-ax.axhline(
-    y=3,
-    color="black",
-    linestyle="--",
-    linewidth=1,
-    alpha=1,
-    zorder=2,
-)
-
-# Axes formatting
-ax.xaxis.set_major_locator(MultipleLocator(5))
-ax.spines["top"].set_visible(False)
-ax.spines["right"].set_visible(False)
-ax.tick_params(axis="both", labelsize=11)
-
-ax.set_xlabel("Day", fontsize=13, labelpad=12)
-ax.set_ylabel("NPI value", fontsize=13)
-
-
-# --------------------------------------------------
-# Figure-level legend (outside plot)
-# --------------------------------------------------
-
-legend_handles = [
-    plt.Line2D(
-        [0], [0],
-        marker="o",
-        linestyle="",
-        markerfacecolor=color,
-        markeredgecolor="black",
-        markersize=6,
-        label=group,
+    fig.legend(
+        handles=legend_handles,
+        loc="upper center",
+        bbox_to_anchor=(0.5, 0.90),
+        ncol=len(consciousness_colors),
+        frameon=False,
     )
-    for group, color in consciousness_colors.items()
-]
 
-fig.legend(
-    handles=legend_handles,
-    title="Consciousness group\n",
-    fontsize=11,
-    title_fontsize=12,
-    frameon=False,
-    loc="upper center",
-    bbox_to_anchor=(0.5, 1.03),
-    ncol=len(consciousness_colors),
-    labelspacing=0.8,
-    handletextpad=0.6,
-)
+    fig.tight_layout(rect=[0.02, 0.01, 0.98, 0.88])
 
-# Reserve space for legend
-fig.tight_layout(rect=[0.02, 0.02, 0.98, 0.85])
-
-# Save
-fig_path = os.path.join(
-    save_path_time,
-    f"NPI_group_responses_{save_path_time.split(os.sep)[-1]}.jpg"
-)
-fig.savefig(fig_path, dpi=600, bbox_inches="tight")
-plt.close(fig)
-"""
+    fig_path = os.path.join(
+        save_path,
+        f"consciousness_group_pupil_responses_{save_path.split(os.sep)[-1]}.jpg",
+    )
+    plt.savefig(fig_path, dpi=600, bbox_inches="tight")
+    plt.close()
