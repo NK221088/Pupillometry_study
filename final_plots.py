@@ -471,10 +471,10 @@ for lateral in laterals:
     
     etiology_coding = {
         0: "Cardiac cause",
-        1: "cerebrovaskulær",
-        2: "cerebrovaskulær",
-        3: "cerebrovaskulær",
-        4: "cerebrovaskulær",
+        1: "Cerebrovascular",
+        2: "Cerebrovascular",
+        3: "Cerebrovascular",
+        4: "Cerebrovascular",
         5: "TBI",
         8: "Other",
         9: "Other",
@@ -488,10 +488,10 @@ for lateral in laterals:
     }
 
     group_colors = {
-    "Cardiac cause": "#E69F00",   # muted amber
-    "cerebrovaskulær": "#0072B2", # dark blue
-    "TBI": "#D55E00",             # vermillion
-    "Other": "#CC79A7",           # muted magenta
+        "Cardiac cause": "#4D4D4D",    # dark grey
+        "Cerebrovascular": "#0072B2",  # blue
+        "TBI": "#D55E00",              # vermillion
+        "Other": "#CC79A7",            # magenta
     }
 
     # --------------------------------------------------
@@ -505,7 +505,7 @@ for lateral in laterals:
         # group patients by etiology (same across days)
         etiology_groups = {
             "Cardiac cause": [],
-            "cerebrovaskulær": [],
+            "Cerebrovascular": [],
             "TBI": [],
             "Other": [],
         }
@@ -546,7 +546,7 @@ for lateral in laterals:
     fig, axes = plt.subplots(
         n_rows,
         n_cols,
-        figsize=(4 * n_cols, 3 * n_rows),
+        figsize=(4 * n_cols + 2, 3 * n_rows),
         sharex=True,
         sharey=True,
     )
@@ -562,7 +562,7 @@ for lateral in laterals:
                     df.index,
                     df[patient_id],
                     color=color,
-                    alpha=0.3,
+                    alpha=0.4,
                     linewidth=1,
                 )
 
@@ -577,7 +577,7 @@ for lateral in laterals:
     # Global labels & legend
     # --------------------------------------------------
 
-    fig.supylabel("Pupil size")
+    fig.supylabel("Pupil size (mm)")
 
     legend_handles = [
         plt.Line2D([0], [0], color=c, lw=2, label=k)
@@ -616,13 +616,14 @@ for lateral in laterals:
         'F': "Sedated",
         "T": "Sedated",
         'O': "Sedated",
-        'nan': "None",
+        'nan': "Not-sedated",
     }
 
     group_colors = {
         "Sedated": "tab:purple",
-        "None":  "#FFD700",
+        "Not-sedated": "#E69F00",   # muted amber
     }
+
 
     # --------------------------------------------------
     # Collect data per day
@@ -634,7 +635,7 @@ for lateral in laterals:
 
         sedation_groups = {
         "Sedated" :  [],
-        "None" :  [],
+        "Not-sedated" :  [],
         }
 
         day_sedation_metrics = sedation_metrics.get(day, {})
@@ -675,7 +676,7 @@ for lateral in laterals:
     fig, axes = plt.subplots(
         n_rows,
         n_cols,
-        figsize=(4 * n_cols, 3 * n_rows),
+        figsize=(4 * n_cols + 2, 3 * n_rows),
         sharex=True,
         sharey=True,
     )
@@ -691,7 +692,7 @@ for lateral in laterals:
                     df.index,
                     df[patient_id],
                     color=color,
-                    alpha=0.3,
+                    alpha=0.4,
                     linewidth=1,
                 )
 
@@ -705,7 +706,7 @@ for lateral in laterals:
     # Global labels & legend
     # --------------------------------------------------
 
-    fig.supylabel("Pupil size")
+    fig.supylabel("Pupil size (mm)")
 
     legend_handles = [
         plt.Line2D([0], [0], color=c, lw=2, label=k)
@@ -744,10 +745,10 @@ for lateral in laterals:
 
     consciousness_coding = {
         "C": "Coma",
-        "E": "eMCS",
-        "M+": "MCS+",
-        "M-": "MCS-",
         "U": "UWS",
+        "M-": "MCS-",
+        "M+": "MCS+",
+        "E": "eMCS",
     }
 
     consciousness_colors = {
@@ -769,9 +770,9 @@ for lateral in laterals:
 
         consciousness_groups = {
             "Coma": [],
+            "MCS-": [],
             "UWS": [],
             "MCS+": [],
-            "MCS-": [],
             "eMCS": [],
         }
 
@@ -813,7 +814,7 @@ for lateral in laterals:
     fig, axes = plt.subplots(
         n_rows,
         n_cols,
-        figsize=(4 * n_cols, 3 * n_rows),
+        figsize=(4 * n_cols + 2, 3 * n_rows),
         sharex=True,
         sharey=True,
     )
@@ -854,21 +855,30 @@ for lateral in laterals:
     # Global labels & legend
     # --------------------------------------------------
 
-    fig.supylabel("Pupil size")
+    fig.supylabel("Pupil size (mm)")
 
-    legend_handles = [
-        plt.Line2D([0], [0], color=c, lw=2, label=k)
-        for k, c in consciousness_colors.items()
+    legend_order = [
+        "Coma",
+        "UWS",
+        "MCS-",
+        "MCS+",
+        "eMCS",
     ]
 
-    # Healthy controls (mean)
+    legend_handles = [
+        plt.Line2D([0], [0],
+                color=consciousness_colors[label],
+                lw=2,
+                label=label)
+        for label in legend_order
+    ]
+
+    # Healthy controls last
     legend_handles.append(
-        plt.Line2D(
-            [0], [0],
-            color="tab:purple",
-            lw=2,
-            label="Healthy controls",
-        )
+        plt.Line2D([0], [0],
+                color="tab:purple",
+                lw=2,
+                label="Healthy controls")
     )
 
     fig.suptitle(
@@ -881,9 +891,13 @@ for lateral in laterals:
         handles=legend_handles,
         loc="upper center",
         bbox_to_anchor=(0.5, 0.90),
-        ncol=len(consciousness_colors),
+        bbox_transform=fig.transFigure,
+        ncol=len(legend_handles),
         frameon=False,
+        handlelength=2.5,
+        columnspacing=1.8,
     )
+
 
     fig.tight_layout(rect=[0.02, 0.01, 0.98, 0.88])
 
