@@ -1,57 +1,13 @@
 from read_data import left_data_original
 from read_data import left_data_with_dates
+from pearson import Pearson_corrfunc
+from spearman import Spearman_corrfunc
 import seaborn as sns
 import matplotlib.pyplot as plt
 import numpy as np
 from scipy import stats
 import os
 import pandas as pd
-
-def Pearson_corrfunc(x, y, **kwargs):
-    """Calculate and display correlation coefficient"""
-    mask = ~np.isnan(x) & ~np.isnan(y)
-    if mask.sum() < 2:
-        return
-    
-    r, p = stats.pearsonr(x[mask], y[mask])
-    
-    # Determine significance stars
-    if p < 0.001:
-        sig = '***'
-    elif p < 0.01:
-        sig = '**'
-    elif p < 0.05:
-        sig = '*'
-    else:
-        sig = 'ns'
-    
-    ax = plt.gca()
-    ax.annotate(f'r = {r:.2f}{sig}',
-                xy=(0.5, 0.5), xycoords='axes fraction',
-                ha='center', va='center', fontsize=12)
-
-def Spearman_corrfunc(x, y, **kwargs):
-    """Calculate and display correlation coefficient"""
-    mask = ~np.isnan(x) & ~np.isnan(y)
-    if mask.sum() < 2:
-        return
-    
-    r, p = stats.spearmanr(x[mask], y[mask])
-    
-    # Determine significance stars (consistent with Pearson version)
-    if p < 0.001:
-        sig = '***'
-    elif p < 0.01:
-        sig = '**'
-    elif p < 0.05:
-        sig = '*'
-    else:
-        sig = 'ns'
-    
-    ax = plt.gca()
-    ax.annotate(rf'$\rho$ = {r:.2f}{sig}',
-                xy=(0.5, 0.5), xycoords='axes fraction',
-                ha='center', va='center', fontsize=12)
 
 # Create the pairplot
 columns_to_plot = ["Arousal gradient", "Max PLR", "LOR early gradient", "LOR late gradient", "FOUR scores", "SECONDS scores", "GCS scores"]

@@ -7,7 +7,6 @@ load_dotenv()
 
 NPI_data_path = os.getenv("NPI_data_path")
 NPI_data = pd.read_excel(NPI_data_path)
-# NPI_data = pd.read_csv(rf"L:\AuditData\CONNECT-ME\Nikolai\pupillometry\Data\NPI_measurements.csv")
 merging_columns = [
     "date_examination",
     "light_off_performed",
