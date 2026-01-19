@@ -15,6 +15,8 @@ random_state = 25
 left_NPI_data_cleaned = left_NPI_data_cleaned.dropna()
 X = left_NPI_data_cleaned.copy()[[col for col in left_NPI_data_cleaned if col not in  ["NPi", "redcap repeat instance", "record id"]]]
 y = left_NPI_data_cleaned.copy()["NPi"]
+left_NPI_data_cleaned.to_csv(
+    os.path.join(NPI_distribution_plots_path, f'left_NPI_data_cleaned.csv'))
 
 X_train, X_test, y_train, y_test = train_test_split(
     X, y, test_size=0.2, random_state=random_state
