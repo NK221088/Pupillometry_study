@@ -35,35 +35,30 @@ NPi_data <- NPi_measurements %>%
   drop_na()
 
 # ------------------------------------------------------------
-# 2. Fixed piecewise-linear rule for pupil_min
+# 2. Define Q functions
 # ------------------------------------------------------------
 
-f_pupil_min <- function(pupil_min) {
-  
-  PM_LOW  <- 4.1
-  PM_HIGH <- 6.7
-  
-  f_LOW  <- -5.2
-  f_HIGH <-  0.0
-  
-  slope_mid <- (f_HIGH - f_LOW) / (PM_HIGH - PM_LOW)
-  
-  f <- numeric(length(pupil_min))
-  
-  # poor reflex: saturating penalty
-  idx_low <- pupil_min <= PM_LOW
-  f[idx_low] <- f_LOW
-  
-  # transitional: linear ramp
-  idx_mid <- pupil_min > PM_LOW & pupil_min < PM_HIGH
-  f[idx_mid] <- f_LOW + slope_mid * (pupil_min[idx_mid] - PM_LOW)
-  
-  # normal: plateau
-  idx_high <- pupil_min >= PM_HIGH
-  f[idx_high] <- f_HIGH
-  
-  return(f)
+pup_min_alpha     <- 0.2
+pup_min_x0        <- 6.643065
+pup_min_intercept <- -5.67164
+
+Q_pupil_min <- function(x,
+                        alpha = pup_min_alpha,
+                        x0    = pup_min_x0,
+                        c0    = pup_min_intercept) {
+  alpha * (x - x0)^2 + c0
 }
+
+pup_size_intercept = -2.6225883
+pup_size_a = 0.8732758
+
+Q_pupil_size <- function(x,
+                        a = pup_size_a,
+                        c0    = pup_size_intercept) {
+  a * x + c0
+}
+
+
 
 
 # ------------------------------------------------------------
