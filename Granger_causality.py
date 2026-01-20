@@ -5,7 +5,7 @@ import numpy as np
 import pandas as pd
 import seaborn as sns
 
-from read_data import (patient_left_FOUR_metrics, patient_left_first_50_metrics, patient_left_second_50_metrics, patient_left_LOR_late_gradient_metrics)
+from Data_loading.read_data import (patient_left_FOUR_metrics, patient_left_first_50_metrics, patient_left_second_50_metrics, patient_left_LOR_late_gradient_metrics)
 
 patient_left_scores = {}
 for index in patient_left_FOUR_metrics.index:

@@ -1,0 +1,13 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "Run NPI investigation",
+            "type": "python",
+            "request": "launch",
+            "module": "NPi.NPI_investigation",
+            "cwd": "${workspaceFolder}",
+            "console": "integratedTerminal"
+        }
+    ]
+}

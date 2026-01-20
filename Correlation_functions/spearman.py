@@ -1,3 +1,5 @@
+import numpy as np
+
 def Spearman_corrfunc(x, y, **kwargs):
     """Calculate and display correlation coefficient"""
     mask = ~np.isnan(x) & ~np.isnan(y)

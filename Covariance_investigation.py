@@ -1,4 +1,10 @@
-from read_data import left_data_original
+import sys
+import os
+
+# Add the project root (one folder up) to Python's module search path
+sys.path.append(os.path.dirname(os.path.dirname(__file__)))
+
+from Data_loading.read_data import left_data_original
 import matplotlib.pyplot as plt
 import seaborn as sns
 import os
