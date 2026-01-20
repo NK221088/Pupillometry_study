@@ -1,4 +1,4 @@
-from NPI_investigation import left_NPI_data_cleaned
+from NPI_investigation import left_NPI_data_cleaned, right_NPI_data_cleaned
 from sklearn.model_selection import train_test_split
 from sklearn.linear_model import LinearRegression
 from sklearn.metrics import r2_score, mean_squared_error
@@ -11,6 +11,10 @@ load_dotenv()
 NPI_distribution_plots_path = os.getenv("NPI_distribution_plots_path")
 
 random_state = 25
+
+right_NPI_data_cleaned = left_NPI_data_cleaned.dropna()
+right_NPI_data_cleaned.to_csv(
+    os.path.join(NPI_distribution_plots_path, f'right_NPI_data_cleaned.csv'))
 
 left_NPI_data_cleaned = left_NPI_data_cleaned.dropna()
 X = left_NPI_data_cleaned.copy()[[col for col in left_NPI_data_cleaned if col not in  ["NPi", "redcap repeat instance", "record id"]]]

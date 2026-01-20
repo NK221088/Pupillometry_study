@@ -9,8 +9,9 @@ import pandas as pd
 from dotenv import load_dotenv
 load_dotenv()
 
-# NPi_measurements_data_path = os.getenv("NPI_measurements_data_path")
-NPI_data = pd.read_csv(rf"C:\Users\NTres\OneDrive - Danmarks Tekniske Universitet\Arbejde_Rigshospitalet\Pupillometry\NPI_investigation\NPI_measurements.csv")
+NPi_measurements_data_path = os.getenv("NPI_measurements_data_path")
+# NPI_data = pd.read_csv(rf"C:\Users\NTres\OneDrive - Danmarks Tekniske Universitet\Arbejde_Rigshospitalet\Pupillometry\NPI_investigation\NPI_measurements.csv")
+NPI_data = pd.read_csv(NPi_measurements_data_path)
 merging_columns = [
     "date_examination",
     "light_off_performed",
