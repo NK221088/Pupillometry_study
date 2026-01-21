@@ -68,33 +68,33 @@ gam_ref <- gam(
 summary(gam_ref)
 
 
-gam_no_dv <- gam(
-  NPi ~
-    s(pupil_size, k = 6) +
-    s(pupil_min, k = 6) +
-    s(max_const_velocity, k = 6) +
-    s(ch, k = 6) +
-    s(record_id, bs = "re"),
-  data = NPi_gam,
-  method = "REML"
-)
+# gam_no_dv <- gam(
+#   NPi ~
+#     s(pupil_size, k = 6) +
+#     s(pupil_min, k = 6) +
+#     s(max_const_velocity, k = 6) +
+#     s(ch, k = 6) +
+#     s(record_id, bs = "re"),
+#   data = NPi_gam,
+#   method = "REML"
+# )
+# 
+# summary(gam_no_dv)
 
-summary(gam_no_dv)
+# gam_no_cv <- gam(
+#   NPi ~
+#     s(pupil_size, k = 6) +
+#     s(pupil_min, k = 6) +
+#     s(ch, k = 6) +
+#     s(dilat_velocity, k = 6) +
+#     s(record_id, bs = "re"),
+#   data   = NPi_gam,
+#   method = "REML"
+# )
 
-gam_no_cv <- gam(
-  NPi ~
-    s(pupil_size, k = 6) +
-    s(pupil_min, k = 6) +
-    s(ch, k = 6) +
-    s(dilat_velocity, k = 6) +
-    s(record_id, bs = "re"),
-  data   = NPi_gam,
-  method = "REML"
-)
-
-summary(gam_no_cv)
-
-anova(gam_ref, gam_no_cv, test = "Chisq")
+# summary(gam_no_cv)
+# 
+# anova(gam_ref, gam_no_cv, test = "Chisq")
 
 # ------------------------------------------------------------
 # 3. Extract all smooths explicitly
@@ -243,39 +243,50 @@ abline(v = x0_ch, lty = 2)
 abline(h = 0, lty = 2)
 
 # ------------------------------------------------------------
-# 8. Fit Min. pupil size
+# 8. Fit minimum pupil size (linear contribution)
 # ------------------------------------------------------------
 
-min_row <- sm_pupil_min[which.min(sm_pupil_min$smooth), ]
-
-x0_min <- min_row$x
-c0_min <- min_row$smooth
+# Reference point: zero-crossing of the smooth (for interpretability)
+x0_min <- sm_pupil_min$x[
+  which.min(abs(sm_pupil_min$smooth))
+]
 
 x0_min
-c0_min
 
-Q_pupil_min <- function(x, a, x0 = x0_min, c0 = c0_min) {
-  a * (x - x0)^2 + c0
+# Define linear Q-function
+Q_pupil_min <- function(x, b, x0 = x0_min) {
+  b * (x - x0)
 }
 
-fit_min <- nls(
-  smooth ~ Q_pupil_min(x, a),
-  data  = sm_pupil_min,
-  start = list(a = 0.1)
+# Fit linear model to full smooth
+fit_min <- lm(
+  smooth ~ I(x - x0_min),
+  data = sm_pupil_min
 )
 
 coef(fit_min)
 
-plot(sm_pupil_min$x, sm_pupil_min$smooth,
-     type = "l", lwd = 2,
-     xlab = "Minimum pupil size (mm)",
-     ylab = "Contribution to NPi")
+b_min <- coef(fit_min)[2]
 
-lines(sm_pupil_min$x,
-      Q_pupil_min(sm_pupil_min$x, coef(fit_min)["a"]),
-      col = "red", lwd = 2)
+# Diagnostic plot
+plot(
+  sm_pupil_min$x,
+  sm_pupil_min$smooth,
+  type = "l", lwd = 2,
+  xlab = "Minimum pupil size (mm)",
+  ylab = "Contribution to NPi"
+)
 
+lines(
+  sm_pupil_min$x,
+  Q_pupil_min(sm_pupil_min$x, b_min),
+  col = "red", lwd = 2
+)
+
+abline(h = 0, lty = 2)
 abline(v = x0_min, lty = 2)
+
+
 
 # ------------------------------------------------------------
 # 10. Fit pupil size (log + power-law)
@@ -428,9 +439,10 @@ Q_ch <- function(x) {
 
 # Minimum pupil size term (penalty quadratic)
 coef_min <- coef(fit_min)
+b_min <- coef_min[2]   # slope of the linear effect
 
 Q_pupil_min <- function(x) {
-  coef_min["a"] * (x - x0_min)^2 + c0_min
+  b_min * (x - x0_min)
 }
 
 # Maximum constriction velocity term
@@ -576,8 +588,9 @@ Q_pupil_size <- function(x) {
 }
 
 Q_pupil_min <- function(x) {
-  a_min * (x - x0_min)^2 + c0_min
+  b_min * (x - x0_min)
 }
+
 
 Q_ch <- function(x) {
   a_ch * (x - x0_ch)^2 + c0_ch
@@ -607,32 +620,42 @@ NPi_hat <- function(pupil_size,
 
 saveRDS(
   list(
-    beta0 = beta0,
+    # ---- Core weights ----
+    beta0   = beta0,
     w_pupil = w_pupil,
-    w_min = w_min,
-    w_ch = w_ch,
-    w_mcv = w_mcv,
+    w_min   = w_min,
+    w_ch    = w_ch,
+    w_mcv   = w_mcv,
+    
+    # ---- Pupil size (nonlinear) ----
     alpha_pup = alpha_pup,
-    beta_pup = beta_pup,
-    x0_pup = x0_pup,
-    p_pup = p_pup,
-    c0_pup = c0_pup,
-    a_min = a_min,
+    beta_pup  = beta_pup,
+    x0_pup    = x0_pup,
+    p_pup     = p_pup,
+    c0_pup    = c0_pup,
+    
+    # ---- Minimum pupil size (LINEAR) ----
+    b_min  = b_min,
     x0_min = x0_min,
-    c0_min = c0_min,
-    a_ch = a_ch,
+    
+    # ---- Constriction amplitude ----
+    a_ch  = a_ch,
     x0_ch = x0_ch,
     c0_ch = c0_ch,
-    a_mcv = a_mcv,
+    
+    # ---- Max constriction velocity ----
+    a_mcv  = a_mcv,
     x0_mcv = x0_mcv,
-    eps = eps,
+    
+    # ---- Logistic squash ----
+    eps       = eps,
     k_squash  = k_squash,
     z0_squash = z0_squash,
     L_squash  = L_squash
-    
   ),
   file = "NPi_hat_parameters.rds"
 )
+
 
 
 
@@ -680,6 +703,8 @@ NPi_right$NPi_latent <- with(
     w_mcv   * Q_mcv(max_const_velocity)
 )
 
+
+
 NPi_right$NPi_hat <- NPi_squash(NPi_right$NPi_latent)
 
 
@@ -703,9 +728,6 @@ R2_NPi_hat_right <- 1 -
   sum((NPi_right$NPi - NPi_right$NPi_hat)^2) /
   sum((NPi_right$NPi - mean(NPi_right$NPi))^2)
 
-
-
-
 R2_GAM_right <- 1 - sum((NPi_right$NPi - NPi_right$NPi_hat_GAM)^2) /
   sum((NPi_right$NPi - mean(NPi_right$NPi))^2)
 
@@ -715,3 +737,67 @@ RMSE_GAM_right <- sqrt(mean(
 
 R2_NPi_hat_right
 R2_GAM_right
+
+
+NPi_right <- NPi_right %>%
+  mutate(
+    abs_error = abs(NPi - NPi_hat)
+  ) %>%
+  arrange(desc(abs_error))
+head(NPi_right, 20)
+
+vars <- list(
+  list(name = "pupil_min",  label = "Minimum pupil size (mm)", vline = x0_min),
+  list(name = "pupil_size", label = "Pupil size (mm)",         vline = x0_pup),
+  list(name = "ch",         label = "Constriction amplitude",  vline = x0_ch),
+  list(name = "max_const_velocity", label = "Max constriction velocity", vline = x0_mcv),
+  list(name = "dilat_velocity", label = "Dilation velocity",   vline = NULL)
+)
+
+for (v in vars) {
+  plot(
+    NPi_right[[v$name]],
+    NPi_right$residual,
+    pch = 16, col = rgb(0,0,0,0.4),
+    xlab = v$label,
+    ylab = "Residual (Observed − Predicted)"
+  )
+  abline(h = 0, lty = 2)
+  if (!is.null(v$vline)) abline(v = v$vline, lty = 2)
+}
+
+plot(
+  NPi_right$NPi_hat,
+  NPi_right$residual,
+  pch = 16, col = rgb(0,0,0,0.4),
+  xlab = "Predicted NPi",
+  ylab = "Residual (Observed − Predicted)"
+)
+abline(h = 0, lty = 2)
+
+plot(
+  NPi_right$NPi_latent,
+  NPi_right$residual,
+  pch = 16, col = rgb(0,0,0,0.4),
+  xlab = "Latent NPi score (z)",
+  ylab = "Residual"
+)
+abline(h = 0, lty = 2)
+
+
+hist(
+  NPi_gam$NPi,
+  breaks = 30,
+  main = "Distribution of NPi (training data)",
+  xlab = "NPi"
+)
+
+NPi_right %>%
+  mutate(bin = cut(NPi, breaks = c(0, 2, 3, 4, 5))) %>%
+  group_by(bin) %>%
+  summarise(
+    n = n(),
+    RMSE = sqrt(mean((NPi - NPi_hat)^2)),
+    mean_abs_error = mean(abs(NPi - NPi_hat))
+  )
+
