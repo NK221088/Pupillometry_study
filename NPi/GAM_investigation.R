@@ -76,10 +76,13 @@ summary(gam_ref)
 #     s(ch, k = 6) +
 #     s(record_id, bs = "re"),
 #   data = NPi_gam,
-#   method = "REML"
+#   method = "ML"
 # )
 # 
 # summary(gam_no_dv)
+# 
+# anova(gam_ref, gam_no_dv, test = "Chisq")
+
 
 # gam_no_cv <- gam(
 #   NPi ~
@@ -409,7 +412,21 @@ a2_dv <- coef(fit_dv_quad)[3]
 a1_dv <- coef(fit_dv_quad)[2]
 a0_dv <- coef(fit_dv_quad)[1]
 
+# Quadratic prediction from fitted model
+pred_dv <- a0_dv +
+  a1_dv * sm_dv$x +
+  a2_dv * sm_dv$x^2
 
+plot(sm_dv$x, sm_dv$smooth,
+     type = "l", lwd = 2,
+     xlab = "Dilation velocity",
+     ylab = "Contribution to NPi")
+
+lines(sm_dv$x,
+      pred_dv,
+      col = "red", lwd = 2)
+
+abline(h = 0, lty = 2)
 # ------------------------------------------------------------
 # 13. Fit reconstructed NPi (NPi_hat) using core terms
 # ------------------------------------------------------------
