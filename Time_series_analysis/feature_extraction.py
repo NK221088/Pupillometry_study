@@ -5,7 +5,9 @@ import os
 sys.path.append(os.path.dirname(os.path.dirname(__file__)))
 
 from NPi.final_plots import patient_left_individual_raw_data, patient_left_individual_text_data
+from Data_loading.dates import NPI_data_cleaned
 import numpy as np
+import pandas as pd
 
 zero_start_time = 0
 light_on_time = 3
@@ -38,7 +40,7 @@ def extract_arousal_gradients(data_dict, zero_start_time, light_on_time):
         ]
 
         timespan = interval.index[-1] - interval.index[0]
-        movement = (interval.max() - interval.iloc[0]).clip(lower=0)
+        movement = (interval.max() - interval.iloc[0])
 
         arousal_gradients[key] = movement / timespan
 
@@ -102,3 +104,125 @@ def extract_50_percent_timestamps(
         )
 
     return _50_per_PLR_times, _50_per_LOR_times
+
+##################################################################################
+# LOR Early Gradient:
+
+def extract_LOR_early_gradients(
+    data_dict,
+    LOR_early_start_time,
+    LOR_early_end_time,
+    ):
+    LOR_early_gradients = {}
+
+    for key, df in data_dict.items():
+        interval = df.loc[
+            (df.index >= LOR_early_start_time) &
+            (df.index <= LOR_early_end_time)
+        ]
+
+        timespan = interval.index[-1] - interval.index[0]
+        movement = (interval.max() - interval.iloc[0])
+
+        LOR_early_gradients[key] = movement / timespan
+
+    return LOR_early_gradients
+
+##################################################################################
+# LOR late Gradient:
+
+def extract_LOR_late_gradients(
+    data_dict,
+    LOR_late_start_time,
+    LOR_late_end_time,
+    ):
+    LOR_late_gradients = {}
+
+    for key, df in data_dict.items():
+        interval = df.loc[
+            (df.index >= LOR_late_start_time) &
+            (df.index <= LOR_late_end_time)
+        ]
+
+        timespan = interval.index[-1] - interval.index[0]
+        movement = (interval.max() - interval.iloc[0])
+
+        LOR_late_gradients[key] = movement / timespan
+
+    return LOR_late_gradients
+
+left_arousal_gradients = extract_arousal_gradients(patient_left_individual_raw_data, zero_start_time, light_on_time)
+left_max_PLRs = extract_max_PLR(patient_left_individual_raw_data, light_on_time, LOR_early_start_time)
+left_50_per_PLR_times, left_50_per_LOR_times = extract_50_percent_timestamps(patient_left_individual_raw_data, patient_left_closest_timestamp_LOR_early_start_time, light_on_time, LOR_early_start_time, LOR_late_end_time)
+left_LOR_early_gradients = extract_LOR_early_gradients(patient_left_individual_raw_data, LOR_early_start_time, LOR_early_end_time)
+left_LOR_late_gradients = extract_LOR_late_gradients(patient_left_individual_raw_data, LOR_late_start_time, LOR_late_end_time)
+def dict_to_metric_df(metric_dict, value_name):
+    return (
+        pd.concat(metric_dict,
+                  names=["record_id", "redcap_repeat_instance"])
+          .rename(value_name)
+          .reset_index()
+    )
+metric_dfs = [
+    dict_to_metric_df(left_arousal_gradients, "left_arousal_gradient"),
+    dict_to_metric_df(left_max_PLRs, "left_max_PLR"),
+    dict_to_metric_df(left_LOR_early_gradients, "left_LOR_early_gradient"),
+    dict_to_metric_df(left_LOR_late_gradients, "left_LOR_late_gradient"),
+]
+metric_dfs += [
+    dict_to_metric_df(left_50_per_PLR_times, "left_50pct_PLR_time"),
+    dict_to_metric_df(left_50_per_LOR_times, "left_50pct_LOR_time"),
+]
+left_seconds = {
+    record_id: df.loc["SECONDS"]
+    for record_id, df in patient_left_individual_text_data.items()
+    if "SECONDS" in df.index
+}
+left_seconds_df = dict_to_metric_df(
+    left_seconds,
+    "left_SECONDS"
+)
+metric_dfs += [left_seconds_df]
+
+from functools import reduce
+
+left_metrics_df = reduce(
+    lambda l, r: l.merge(
+        r,
+        on=["record_id", "redcap_repeat_instance"],
+        how="outer"
+    ),
+    metric_dfs
+)
+left_metrics_df = left_metrics_df.merge(
+    NPI_data_cleaned[
+        ["record_id", "redcap_repeat_instance", "date_examination_merged"]
+    ],
+    on=["record_id", "redcap_repeat_instance"],
+    how="left"
+)
+SECONDS_conversion_dict = {
+"C": 0,
+"U": 1,
+"M-": 2,
+"M+": 3,
+"E": 4
+}
+left_metrics_df = left_metrics_df.replace(SECONDS_conversion_dict)
+survival = {
+    record_id: df.loc["90-day survival"].iloc[0]
+    for record_id, df in patient_left_individual_text_data.items()
+    if "90-day survival" in df.index
+}
+
+day1_df = pd.concat(
+    {
+        patient_id: df[1]          # column 1 = day one
+        for patient_id, df in patient_left_individual_raw_data.items()
+    },
+    axis=1
+)
+
+day1_df.columns.name = "patient_id"
+
+day1_df.to_csv(rf"L:\Auditdata\CONNECT-ME\Nikolai\pupillometry\Distribution_investigation\day1_left_raw_data.csv")

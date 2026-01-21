@@ -123,6 +123,8 @@ patient_right_individual_text_data = {patient_id: pd.concat([
     ], axis=1, keys=patient_right_text_data.keys()) for patient_id in all_patient_ids}
 
 for patient_id in all_patient_ids:
+    if patient_id == 74:
+        continue
     visit_order = (
         NPI_data_cleaned[NPI_data_cleaned["record_id"] == patient_id]
         .sort_values("date_examination_merged")
@@ -152,7 +154,7 @@ for patient_id in all_patient_ids:
 
 save_path_time = os.getenv("save_path_time_left")
 
-'''
+
 # --------------------------------------------------
 # Consciousness coding & colors
 # --------------------------------------------------
@@ -914,4 +916,3 @@ for lateral in laterals:
     )
     plt.savefig(fig_path, dpi=600, bbox_inches="tight")
     plt.close()
-'''
