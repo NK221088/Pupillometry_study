@@ -1,6 +1,6 @@
 from statsmodels.miscmodels.ordinal_model import OrderedModel
 from statsmodels.discrete.discrete_model import Logit
-from read_data import left_data_original
+from Data_loading.read_data import left_data_original
 import numpy as np
 
 # Create the pairplot

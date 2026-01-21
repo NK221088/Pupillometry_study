@@ -41,7 +41,7 @@ patient_right_closest_timestamp_LOR_early_start_time = {sheet_name: np.argmin(np
 patient_right_text_data = {sheet_name: patient_right_data[sheet_name].iloc[:patient_right_zero_indices[sheet_name]] for sheet_name in patient_right_data.keys()} # Extract text data -> Everything before first time index
 patient_right_numeric_data = {sheet_name: patient_right_data[sheet_name].iloc[patient_right_zero_indices[sheet_name]:].apply(pd.to_numeric, errors='coerce') for sheet_name in patient_right_data.keys()}
 
-"""
+
 ##################################################################################
 # Arousal gradient
 patient_left_arousal_interval_data = {sheet_name: patient_left_numeric_data[sheet_name][(patient_left_numeric_data[sheet_name].index >= zero_start_time) & (patient_left_numeric_data[sheet_name].index <= light_on_time)] for sheet_name in patient_left_data.keys()}
@@ -340,27 +340,26 @@ patient_right_35_metrics = pd.concat([
     for sheet_name in patient_right_data.keys()
 ], axis=1, keys=patient_right_data.keys())
 
-from dates import dates_data_original
-# Merge the two dataframes on both 'Subject ID' and 'Day'
-left_data_with_dates = left_data_original.merge(
-    dates_data_original[['Subject ID', 'Day', 'individuel_dates']], 
-    on=['Subject ID', 'Day'], 
-    how='left'
-)
-mismatched = {}
-for id in np.unique(left_data_original["Subject ID"].values):
-    if dates_data_original[dates_data_original["Subject ID"] == id].shape[0] != left_data_original[left_data_original["Subject ID"] == id].shape[0]:
-        mismatched[id] = {
-            "Dates shape": dates_data_original[dates_data_original["Subject ID"] == id].shape[0],
-            "Sarahs data shape": left_data_original[left_data_original["Subject ID"] == id].shape[0],
-            "Number of differing instances": np.abs(dates_data_original[dates_data_original["Subject ID"] == id].shape[0] - left_data_original[left_data_original["Subject ID"] == id].shape[0])
-        }
+# from dates import dates_data_original
+# # Merge the two dataframes on both 'Subject ID' and 'Day'
+# left_data_with_dates = left_data_original.merge(
+#     dates_data_original[['Subject ID', 'Day', 'individuel_dates']], 
+#     on=['Subject ID', 'Day'], 
+#     how='left'
+# )
+# mismatched = {}
+# for id in np.unique(left_data_original["Subject ID"].values):
+#     if dates_data_original[dates_data_original["Subject ID"] == id].shape[0] != left_data_original[left_data_original["Subject ID"] == id].shape[0]:
+#         mismatched[id] = {
+#             "Dates shape": dates_data_original[dates_data_original["Subject ID"] == id].shape[0],
+#             "Sarahs data shape": left_data_original[left_data_original["Subject ID"] == id].shape[0],
+#             "Number of differing instances": np.abs(dates_data_original[dates_data_original["Subject ID"] == id].shape[0] - left_data_original[left_data_original["Subject ID"] == id].shape[0])
+#         }
 
-df = pd.DataFrame.from_dict(mismatched, orient='index')
+# df = pd.DataFrame.from_dict(mismatched, orient='index')
 
-df.index = df.index.astype(int)  # if your IDs are strings of numbers
-df = df.sort_index()
-df.index.name = "Subject ID"
+# df.index = df.index.astype(int)  # if your IDs are strings of numbers
+# df = df.sort_index()
+# df.index.name = "Subject ID"
 
-print(df)
-"""
+# print(df)

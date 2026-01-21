@@ -6,7 +6,7 @@ import pandas as pd
 import numpy as np
 import statsmodels.formula.api as smf
 from scipy import stats
-from read_data import left_data_original
+from Data_loading.read_data import left_data_original
 from Covariance_investigation import X_pca_components_for_model
 from statsmodels.discrete.discrete_model import Logit
 import statsmodels.api as sm

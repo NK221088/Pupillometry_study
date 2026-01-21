@@ -1,5 +1,11 @@
-from dates import NPI_data_cleaned
-from read_data import patient_left_data, patient_right_data, patient_left_numeric_data, patient_right_numeric_data, patient_left_text_data, patient_right_text_data, HC_left_data,  HC_left_text_data, HC_left_numeric_data
+import sys
+import os
+
+# Add the project root (one folder up) to Python's module search path
+sys.path.append(os.path.dirname(os.path.dirname(__file__)))
+
+from Data_loading.dates import NPI_data_cleaned
+from Data_loading.read_data import patient_left_data, patient_right_data, patient_left_numeric_data, patient_right_numeric_data, patient_left_text_data, patient_right_text_data, HC_left_data,  HC_left_text_data, HC_left_numeric_data, left_data_original
 import pandas as pd
 import matplotlib.pyplot as plt
 import os
@@ -146,6 +152,7 @@ for patient_id in all_patient_ids:
 
 save_path_time = os.getenv("save_path_time_left")
 
+'''
 # --------------------------------------------------
 # Consciousness coding & colors
 # --------------------------------------------------
@@ -907,3 +914,4 @@ for lateral in laterals:
     )
     plt.savefig(fig_path, dpi=600, bbox_inches="tight")
     plt.close()
+'''

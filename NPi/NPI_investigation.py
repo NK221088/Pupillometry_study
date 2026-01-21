@@ -1,5 +1,11 @@
-from pearson import Pearson_corrfunc
-from spearman import Spearman_corrfunc
+import sys
+import os
+
+# Add the project root (one folder up) to Python's module search path
+sys.path.append(os.path.dirname(os.path.dirname(__file__)))
+
+from Correlation_functions.pearson import Pearson_corrfunc
+from Correlation_functions.spearman import Spearman_corrfunc
 import seaborn as sns
 import matplotlib.pyplot as plt
 import numpy as np
