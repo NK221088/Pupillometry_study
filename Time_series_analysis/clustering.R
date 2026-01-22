@@ -8,7 +8,7 @@ library(proxy)
 
 # Define save path
 save_path <- "L:/Auditdata/CONNECT-ME/Nikolai/pupillometry/Plots/Clustering"
-load_path <- "L:/Auditdata/CONNECT-ME/Nikolai/pupillometry/Data/day_data"
+load_path <- "L:/Auditdata/CONNECT-ME/Nikolai/pupillometry/Data/Day_data"
 
 #### Loading and preparing the data ####
 
@@ -120,4 +120,4 @@ run_day_clustering <- function(day,
     silhouette = sil
   ))
 }
-results <- lapply(6:20, run_day_clustering)
+results <- lapply(1:4, run_day_clustering)

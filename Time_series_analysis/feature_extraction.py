@@ -4,10 +4,14 @@ import os
 # Add the project root (one folder up) to Python's module search path
 sys.path.append(os.path.dirname(os.path.dirname(__file__)))
 
-from NPi.final_plots import patient_left_individual_raw_data, patient_left_individual_text_data
+from Data_loading.read_data import patient_left_individual_raw_data, patient_left_individual_text_data
+
 from Data_loading.read_NPi_data import NPI_data_cleaned
 import numpy as np
 import pandas as pd
+from dotenv import load_dotenv
+
+load_dotenv()
 
 zero_start_time = 0
 light_on_time = 3
@@ -80,17 +84,17 @@ def extract_50_percent_timestamps(
     _50_per_LOR_times = {}
 
     for key, df in data_dict.items():
-        interval = df.loc[:patient_left_closest_timestamp_LOR_early_start_time]
+        interval = df.loc[:patient_left_closest_timestamp_LOR_early_start_time].dropna(axis=1)
 
         PLR_interval = df.loc[
             (df.index >= light_on_time) &
             (df.index <= LOR_early_start_time)
-        ]
+        ].dropna(axis=1)
 
         LOR_interval = df.loc[
             (df.index >= LOR_early_start_time) &
             (df.index <= LOR_late_end_time)
-        ]
+        ].dropna(axis=1)
 
         max_value = interval.max()
         _50_value = max_value * 0.5
@@ -228,7 +232,10 @@ df_outcome = (
     .reset_index()
     .rename(columns={"index": "record_id"})
 )
-day_save_path = rf"C:\Users\NTres\OneDrive - Danmarks Tekniske Universitet\Arbejde_Rigshospitalet\Pupillometry\Data\Day_data"
+
+
+
+day_save_path = os.getenv("save_path_day_data")
 
 for day in np.unique(left_metrics_df["redcap_repeat_instance"]):
     day_df = pd.concat(
@@ -245,5 +252,3 @@ for day in np.unique(left_metrics_df["redcap_repeat_instance"]):
 
     day_df.to_csv(
     os.path.join(day_save_path, f'day{day}_left_raw_data.csv'))
-    
-    day_df.to_csv(rf"L:\Auditdata\CONNECT-ME\Nikolai\pupillometry\Distribution_investigation\day{day}_left_raw_data.csv")
