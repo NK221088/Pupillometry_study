@@ -7,12 +7,13 @@ library(dtwclust)
 library(proxy)
 
 # Define save path
-save_path <- "C:/Users/NTres/OneDrive - Danmarks Tekniske Universitet/Arbejde_Rigshospitalet/Pupillometry/Plots/Cluster_plots"
+save_path <- "L:/Auditdata/CONNECT-ME/Nikolai/pupillometry/Plots/Clustering"
+load_path <- "L:/Auditdata/CONNECT-ME/Nikolai/pupillometry/Data/day_data"
 
 #### Loading and preparing the data ####
 
 run_day_clustering <- function(day,
-                               input_dir  = "C:/Users/NTres/OneDrive - Danmarks Tekniske Universitet/Arbejde_Rigshospitalet/Pupillometry/Data/Day_data",
+                               input_dir  = load_path,
                                output_dir = save_path,
                                k = 3) {
   

@@ -1,4 +1,10 @@
-from NPi.NPI_investigation import left_NPI_data_cleaned
+import sys
+import os
+
+# Add the project root (one folder up) to Python's module search path
+sys.path.append(os.path.dirname(os.path.dirname(__file__)))
+
+from NPi.NPI_investigation import left_NPI_data_cleaned, right_NPI_data_cleaned
 from sklearn.model_selection import train_test_split
 from sklearn.linear_model import LinearRegression
 from sklearn.metrics import r2_score, mean_squared_error
