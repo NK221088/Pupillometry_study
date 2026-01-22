@@ -214,23 +214,36 @@ survival = {
     for record_id, df in patient_left_individual_text_data.items()
     if "90-day survival" in df.index
 }
-
-day_save_path = rf"C:\Users\NTres\OneDrive - Danmarks Tekniske Universitet\Arbejde_Rigshospitalet\Pupillometry\Data\Day_data"
-
-for day in np.unique(left_metrics_df["redcap_repeat_instance"]):
-    day_df = pd.concat(
-        {
-            patient_id: df[day]          # column 1 = day one
-            for patient_id, df in patient_left_individual_raw_data.items()
-            if day in df.columns
-        },
-        axis=1
+ICU_outcome = {
+    record_id: df.loc["Outcome at ICU"].iloc[0]
+    for record_id, df in patient_left_individual_text_data.items()
+    if "Outcome at ICU" in df.index
+}
+df_outcome = (
+    pd.DataFrame.from_dict(
+        ICU_outcome,
+        orient="index",
+        columns=["ICU_outcome"],
     )
+    .reset_index()
+    .rename(columns={"index": "record_id"})
+)
+# day_save_path = rf"C:\Users\NTres\OneDrive - Danmarks Tekniske Universitet\Arbejde_Rigshospitalet\Pupillometry\Data\Day_data"
 
-    day_df.columns.name = "patient_id"
-    day_df = day_df.drop(list(day_df.columns[day_df.isna().any()]), axis=1)  # drop patients with incomplete data
+# for day in np.unique(left_metrics_df["redcap_repeat_instance"]):
+#     day_df = pd.concat(
+#         {
+#             patient_id: df[day]          # column 1 = day one
+#             for patient_id, df in patient_left_individual_raw_data.items()
+#             if day in df.columns
+#         },
+#         axis=1
+#     )
 
-    day_df.to_csv(
-    os.path.join(day_save_path, f'day{day}_left_raw_data.csv'))
+#     day_df.columns.name = "patient_id"
+#     day_df = day_df.drop(list(day_df.columns[day_df.isna().any()]), axis=1)  # drop patients with incomplete data
+
+#     day_df.to_csv(
+#     os.path.join(day_save_path, f'day{day}_left_raw_data.csv'))
     
     # day_df.to_csv(rf"L:\Auditdata\CONNECT-ME\Nikolai\pupillometry\Distribution_investigation\day{day}_left_raw_data.csv")
