@@ -12,6 +12,8 @@ import pandas as pd
 from dotenv import load_dotenv
 
 load_dotenv()
+day_save_path = os.getenv("save_path_day_data")
+save_path_extracted_features = os.getenv("save_path_extracted_features")
 
 zero_start_time = 0
 light_on_time = 3
@@ -186,7 +188,7 @@ left_seconds_df = dict_to_metric_df(
     left_seconds,
     "left_SECONDS"
 )
-metric_dfs += [left_seconds_df]
+# metric_dfs += [left_seconds_df]
 
 from functools import reduce
 
@@ -212,7 +214,7 @@ SECONDS_conversion_dict = {
 "M+": 3,
 "E": 4
 }
-left_metrics_df = left_metrics_df.replace(SECONDS_conversion_dict)
+# left_metrics_df = left_metrics_df.replace(SECONDS_conversion_dict)
 survival = {
     record_id: df.loc["90-day survival"].iloc[0]
     for record_id, df in patient_left_individual_text_data.items()
@@ -233,9 +235,11 @@ df_outcome = (
     .rename(columns={"index": "record_id"})
 )
 
+left_metrics_df.to_csv(
+    os.path.join(save_path_extracted_features, f'pupilometry_features.csv'))
+df_outcome.to_csv(
+    os.path.join(save_path_extracted_features, f'ICU_outcome.csv'))
 
-
-day_save_path = os.getenv("save_path_day_data")
 
 for day in np.unique(left_metrics_df["redcap_repeat_instance"]):
     day_df = pd.concat(

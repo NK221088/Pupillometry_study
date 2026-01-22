@@ -5,6 +5,9 @@ library(dplyr)
 library(tidyverse)
 library(dtwclust)
 library(proxy)
+library(cluster)
+library(factoextra)
+library(patchwork)
 
 # Define save path
 save_path <- "L:/Auditdata/CONNECT-ME/Nikolai/pupillometry/Plots/Clustering"
