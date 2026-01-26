@@ -8,12 +8,16 @@ library(proxy)
 library(cluster)
 library(factoextra)
 library(patchwork)
+library(purrr)
+library(networkD3)
+
 
 # Define save path
 save_path <- "L:/Auditdata/CONNECT-ME/Nikolai/pupillometry/Plots/Clustering"
 load_path <- "L:/Auditdata/CONNECT-ME/Nikolai/pupillometry/Data/Day_data"
 
 #### Loading and preparing the data ####
+ICU_outcome <- read_csv("L:/Auditdata/CONNECT-ME/Nikolai/pupillometry/Data/ICU_outcome.csv", show_col_types = FALSE)
 
 run_day_clustering <- function(day,
                                input_dir  = load_path,
@@ -31,6 +35,7 @@ run_day_clustering <- function(day,
   left_eye_data <- read_csv(file_path, show_col_types = FALSE)
   colnames(left_eye_data)[1] <- "Time"
   
+  
   # -----------------------------
   # DTW clustering
   # -----------------------------
@@ -46,7 +51,12 @@ run_day_clustering <- function(day,
   clustered_data <- data.frame(
     Eye = colnames(left_eye_data)[-1],
     Cluster = clusters
-  )
+  ) %>%
+    mutate(Eye = as.numeric(Eye))
+  
+  stopifnot(!any(is.na(clustered_data$Eye)))
+  
+  
   
   write.csv(
     clustered_data,
@@ -123,4 +133,77 @@ run_day_clustering <- function(day,
     silhouette = sil
   ))
 }
-results <- lapply(1:4, run_day_clustering)
+results <- lapply(1:3, run_day_clustering)
+
+library(dplyr)
+library(purrr)
+
+cluster_long <- map2_dfr(
+  results,
+  1:3,
+  ~ .x$clusters %>%
+    mutate(Day = .y) %>%
+    rename(record_id = Eye)
+)
+
+cluster_long <- cluster_long %>%
+  left_join(ICU_outcome, by = "record_id")
+
+
+last_day <- cluster_long %>%
+  group_by(record_id) %>%
+  summarise(last_day = max(Day), .groups = "drop")
+
+cluster_long <- cluster_long %>%
+  left_join(last_day, by = "record_id")
+
+cluster_long <- cluster_long %>%
+  mutate(
+    State = paste0("C", Cluster),
+    State = ifelse(
+      Day < last_day,
+      State,
+      ifelse(ICU_outcome == "D", "Dead", "Survived")
+    )
+  )
+
+library(tidyr)
+
+cluster_wide <- cluster_long %>%
+  select(record_id, Day, State) %>%
+  pivot_wider(
+    names_from  = Day,
+    values_from = State,
+    names_prefix = "Day"
+  ) %>%
+  mutate(Freq = 1)
+
+library(ggalluvial)
+library(ggplot2)
+
+ggplot(
+  cluster_wide,
+  aes(
+    axis1 = Day1,
+    axis2 = Day2,
+    axis3 = Day3,
+    y = Freq
+  )
+) +
+  geom_alluvium(aes(fill = Day1), alpha = 0.7, width = 0.2) +
+  geom_stratum(width = 0.25, color = "grey30") +
+  geom_text(
+    stat = "stratum",
+    aes(label = after_stat(stratum)),
+    size = 3
+  ) +
+  scale_x_discrete(
+    limits = c("Day 1", "Day 2", "Day 3"),
+    expand = c(.05, .05)
+  ) +
+  labs(
+    x = "ICU Day",
+    y = "Number of patients",
+    fill = "Initial cluster"
+  ) +
+  theme_minimal(base_size = 11)
