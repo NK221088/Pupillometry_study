@@ -6,6 +6,7 @@ library(caTools) #For splitting into train and test
 library(ggplot2)
 library(reshape2)
 library(pROC)
+library(lme4)
 
 # Set random seed
 set.seed(999)
@@ -22,6 +23,9 @@ outcome_file_path <- "C:/Users/NTres/OneDrive - Danmarks Tekniske Universitet/Ar
 features <- read_csv(features_file_path, show_col_types = FALSE) %>% select(-`...1`) %>% select(-`date_examination_merged`)
 ICU_outcome <-  read_csv(outcome_file_path, show_col_types = FALSE) %>% select(record_id, ICU_outcome) %>% mutate(ICU_outcome = ifelse(ICU_outcome == "A", 1, 0))#Rename ICU outcome to 0/1
 
+# Define feature names
+cols_to_scale <- c("left_arousal_gradient", "left_max_PLR", "left_LOR_early_gradient", "left_LOR_late_gradient", "left_50pct_PLR_time", "left_50pct_LOR_time")
+
 
 # Combine data to allow for splitting it
 combined_data <- inner_join(features, ICU_outcome, by = "record_id")
@@ -33,16 +37,69 @@ clean_data <- combined_data %>% drop_na()
 first_day_data <- clean_data[clean_data$redcap_repeat_instance == 1, ]
 head(first_day_data)
 
+# Computing change to day two¨
+second_day_data <- clean_data[clean_data$redcap_repeat_instance == 2, ]
+
+day_two_change <- merge(
+  first_day_data,
+  second_day_data,
+  by = "record_id",
+  suffixes = c("_day1", "_day2")
+)
+for (col in cols_to_scale) {
+  day_two_change[[paste0(col, "_change")]] <- day_two_change[[paste0(col, "_day2")]] - day_two_change[[paste0(col, "_day1")]]
+}
+day_two_change <- day_two_change %>% select(record_id, ICU_outcome_day1, ends_with("_change"))
+
+day_two_change <- day_two_change %>% rename_with(~ gsub("_day1", "", .x))
+
+###################################################
+# glmer investigation
+###################################################
+
+first_day_data_scaled <- first_day_data %>% mutate(across(all_of(cols_to_scale), scale))
+first_day_data_scaled <- first_day_data_scaled %>% mutate(redcap_repeat_instance = redcap_repeat_instance - 1)
+
+glm_first_day_model = glm(
+                            ICU_outcome ~
+                              left_arousal_gradient + left_max_PLR +
+                              left_LOR_early_gradient + left_LOR_late_gradient +
+                              left_50pct_PLR_time + left_50pct_LOR_time,
+                            data = first_day_data_scaled,
+                            family = binomial(link = "logit")
+                            )
+
+summary(glm_first_day_model)
+
+change_cols <- grep("_change$", names(day_two_change), value=TRUE)
+day_two_change <- day_two_change %>% mutate(across(all_of(change_cols), scale))
+logistic_change_model <- glm(ICU_outcome ~
+                               left_arousal_gradient_change +
+                               left_max_PLR_change +
+                               left_LOR_early_gradient_change +
+                               left_LOR_late_gradient_change +
+                               left_50pct_PLR_time_change +
+                               left_50pct_LOR_time_change,
+                             data = day_two_change,
+                             family = binomial(link = "logit"))
+logistic_change_model
+
+summary(logistic_change_model)
+
+###################################################
+# Preparing training and test data
+###################################################
+
 split <- sample.split(first_day_data$ICU_outcome, SplitRatio = 0.8)
 
 training_data <- subset(first_day_data, split == "TRUE")
 testing_data <- subset(first_day_data, split == "FALSE")
 
+
 ###################################################
 # Center and scale data using training data values
 ###################################################
 
-cols_to_scale <- c("left_arousal_gradient", "left_max_PLR", "left_LOR_early_gradient", "left_LOR_late_gradient", "left_50pct_PLR_time", "left_50pct_LOR_time")
 
 # Compute scaling parameters
 scaling_params <- training_data %>% summarize(across(all_of(cols_to_scale), list(mean = ~mean(.), sd = ~sd(.))))
@@ -53,11 +110,10 @@ training_data_scaled <- training_data %>% mutate(across(all_of(cols_to_scale), ~
 #Scaling testing data using training parameters
 testing_data_scaled <- testing_data %>% mutate(across(all_of(cols_to_scale), ~(. - mean(training_data[[cur_column()]],)) / sd(training_data[[cur_column()]])))
 
-
 ###################################################
 # Modelling
 ###################################################
-#Construct model
+#Construct model logistic regression, using first day data
 logistic_model <- glm(ICU_outcome ~ left_arousal_gradient + left_max_PLR + left_LOR_early_gradient + left_LOR_late_gradient + left_50pct_PLR_time + left_50pct_LOR_time,
                       data = training_data_scaled,
                       family = binomial(link = "logit"))
