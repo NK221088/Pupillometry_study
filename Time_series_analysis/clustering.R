@@ -135,7 +135,7 @@ run_day_clustering <- function(day,
     silhouette = sil
   ))
 }
-results <- lapply(1:14, run_day_clustering)
+results <- lapply(1:13, run_day_clustering)
 
 
 # ============================================================
@@ -213,6 +213,9 @@ cluster_wide_absorbed <- cluster_wide %>%
 
 
 colnames(cluster_wide_absorbed)[-1] <- day_cols
+
+
+
 
 # ------------------------------------------------------------
 # Back to long format (CRITICAL STEP)
@@ -294,4 +297,182 @@ ggplot(
     legend.position    = "right"
   )
 
+ggsave(
+  paste0(save_path, "/Sankey_all_days.png"),
+  dpi = 600
+)
 
+
+######################################################
+
+# ============================================================
+# Build longitudinal cluster trajectories
+# ============================================================
+
+n_days <- length(results)
+
+cluster_long <- map2_dfr(
+  results,
+  seq_len(n_days),
+  ~ .x$clusters %>%
+    mutate(Day = .y) %>%
+    rename(record_id = Eye)
+) %>%
+  mutate(
+    record_id = as.numeric(record_id),
+    State     = paste0("C", Cluster)
+  )
+
+# ------------------------------------------------------------
+# Wide format (per-patient timeline)
+# ------------------------------------------------------------
+cluster_wide <- cluster_long %>%
+  select(record_id, Day, State) %>%
+  pivot_wider(
+    names_from   = Day,
+    values_from  = State,
+    names_prefix = "Day"
+  ) %>%
+  left_join(ICU_outcome, by = "record_id") %>%
+  filter(!is.na(Day1))
+
+day_cols <- paste0("Day", seq_len(n_days))
+
+# Fill forward to handle isolated missing cluster days
+cluster_wide <- cluster_wide %>%
+  arrange(record_id) %>%
+  group_by(record_id) %>%
+  tidyr::fill(all_of(day_cols), .direction = "down") %>%
+  ungroup()
+
+# ------------------------------------------------------------
+# Absorbing outcome logic (discharge detection)
+# ------------------------------------------------------------
+absorb_outcome <- function(states, outcome) {
+  na_runs <- rle(is.na(states))
+  ends    <- cumsum(na_runs$lengths)
+  starts  <- ends - na_runs$lengths + 1
+  
+  idx <- which(na_runs$values & na_runs$lengths >= 2)[1]
+  
+  if (!is.na(idx) && !is.na(outcome)) {
+    absorb_pos <- starts[idx]
+    states[absorb_pos] <- ifelse(outcome == 1, "Survived", "Died")
+    states[(absorb_pos + 1):length(states)] <- NA
+  }
+  
+  states
+}
+
+cluster_wide_absorbed <- cluster_wide %>%
+  rowwise() %>%
+  mutate(
+    new_states = list(
+      absorb_outcome(
+        c_across(all_of(day_cols)),
+        ICU_outcome
+      )
+    )
+  ) %>%
+  ungroup() %>%
+  select(record_id, new_states) %>%
+  tidyr::unnest_wider(new_states, names_sep = "")
+
+colnames(cluster_wide_absorbed)[-1] <- day_cols
+
+# ============================================================
+# ACCUMULATING DESIGN (LONG FORMAT)
+# ============================================================
+
+alluvial_long_accum <- cluster_wide_absorbed %>%
+  pivot_longer(
+    cols      = all_of(day_cols),
+    names_to  = "Day",
+    values_to = "State"
+  ) %>%
+  mutate(
+    Day = as.integer(sub("Day", "", Day))
+  ) %>%
+  arrange(record_id, Day) %>%
+  group_by(record_id) %>%
+  # Propagate clusters and terminal states forward in time
+  tidyr::fill(State, .direction = "down") %>%
+  ungroup() %>%
+  # Label remaining early gaps
+  mutate(
+    State = replace_na(State, "Not observed"),
+    Day   = factor(Day, levels = seq_len(n_days))
+  )
+
+# ------------------------------------------------------------
+# Mark redundant terminal-to-terminal transitions
+# ------------------------------------------------------------
+alluvial_long_accum <- alluvial_long_accum %>%
+  arrange(record_id, Day) %>%
+  group_by(record_id) %>%
+  mutate(
+    prev_state = lag(State),
+    flat_terminal =
+      State %in% c("Diedd", "Survived") &
+      prev_state == State
+  ) %>%
+  ungroup()
+
+# ============================================================
+# Sankey / Alluvial plot
+#   – accumulating terminal blocks
+#   – no shadows for Dead→Dead / Survived→Survived
+# ============================================================
+
+state_colors <- c(
+  "C1" = "#4E79A7",
+  "C2" = "#59A14F",
+  "C3" = "#F28E2B",
+  "Died" = "#E15759",
+  "Survived" = "#76B7B2",
+  "Not observed" = "grey85"
+)
+
+ggplot(
+  alluvial_long_accum,
+  aes(
+    x        = Day,
+    stratum  = State,
+    alluvium = record_id,
+    y        = 1,
+    fill     = State
+  )
+) +
+  geom_flow(
+    aes(alpha = !State %in% c("Died", "Survived")),
+    width = 0.25
+  ) +
+  geom_stratum(
+    color = "grey30",
+    width = 0.3
+  ) +
+  scale_alpha_manual(
+    values = c("TRUE" = 0.65, "FALSE" = 0),
+    guide  = "none"
+  ) +
+  scale_fill_manual(values = state_colors) +
+  scale_x_discrete(
+    labels = paste("Day", seq_len(n_days)),
+    expand = c(.05, .05)
+  ) +
+  labs(
+    x    = "ICU timeline",
+    y    = "Number of patients",
+    fill = "State"
+  ) +
+  theme_minimal(base_size = 11) +
+  theme(
+    panel.grid.major.x = element_blank(),
+    panel.grid.minor   = element_blank(),
+    legend.position    = "right"
+  )
+
+ggsave(
+  paste0(save_path, "/Sankey_all_days.png"),
+  dpi = 600
+)
