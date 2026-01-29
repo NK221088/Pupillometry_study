@@ -274,3 +274,22 @@ for day in np.unique(left_metrics_df["redcap_repeat_instance"]):
 
     day_df.to_csv(
     os.path.join(day_save_path, f'day{day}_left_raw_data.csv'))
+
+HC_NPi = pd.read_excel(rf"L:\Auditdata\CONNECT-ME\Nikolai\pupillometry\Data\Pardis_NPi_Controls.xlsx")
+HC_NPi = HC_NPi[[
+                'npi_right', 'npi_left', 'pupil_size_right',
+                'pupil_size_left', 'pupil_min_right', 'pupil_min_left', 'ch_right',
+                'ch_left', 'const_velocity_right', 'const_velocity_left',
+                'max_const_velocity_right', 'max_const_velocity_left', 'latency_right',
+                'latency_left', 'dilat_velocity_right', 'dilat_velocity_left'
+                ]]
+left_columns = [col for col in HC_NPi.columns if "left" in col]
+right_columns = [col for col in HC_NPi.columns if "right" in col]
+HC_left_NPi = HC_NPi[left_columns]
+HC_right_NPi = HC_NPi[right_columns]
+
+HC_left_NPi.to_csv(
+    os.path.join(save_path_extracted_features, f'HC_left_NPi.csv'))
+
+HC_right_NPi.to_csv(
+    os.path.join(save_path_extracted_features, f'HC_right_NPi.csv'))
