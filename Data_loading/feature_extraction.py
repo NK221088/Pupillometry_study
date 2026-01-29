@@ -225,16 +225,34 @@ ICU_outcome = {
     for record_id, df in patient_left_individual_text_data.items()
     if "Outcome at ICU" in df.index
 }
-df_outcome = (
-    pd.DataFrame.from_dict(
-        ICU_outcome,
-        orient="index",
-        columns=["ICU_outcome"],
-    )
-    .reset_index()
-    .rename(columns={"index": "record_id"})
+
+# df_outcome = (
+#     pd.DataFrame.from_dict(
+#         ICU_outcome,
+#         orient="index",
+#         columns=["ICU_outcome"],
+#     )
+#     .reset_index()
+#     .rename(columns={"index": "record_id"})
+# )
+
+df_outcome = pd.read_csv(rf"L:\Auditdata\CONNECT-ME\Nikolai\pupillometry\Data\ICU_outcome_redcap.csv")
+df_outcome = df_outcome[:252][["record_id", "location_death"]]
+mapping = {
+    1.0: 0,
+    2.0: 1,
+    3.0: 1,
+    4.0: 1
+}
+
+df_outcome["location_death"] = (
+    df_outcome["location_death"]
+        .replace(mapping)
+        .fillna(1)
 )
 
+df_outcome["location_death"] = df_outcome["location_death"].astype(int)
+df_outcome = df_outcome.rename(columns={"location_death": "ICU_outcome"})
 left_metrics_df.to_csv(
     os.path.join(save_path_extracted_features, f'pupilometry_features.csv'))
 df_outcome.to_csv(

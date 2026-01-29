@@ -10,6 +10,9 @@ library(factoextra)
 library(patchwork)
 library(purrr)
 library(networkD3)
+library(tidyr)
+library(ggalluvial)
+library(ggplot2)
 
 
 # Define save path
@@ -18,6 +21,8 @@ load_path <- "L:/Auditdata/CONNECT-ME/Nikolai/pupillometry/Data/Day_data"
 
 #### Loading and preparing the data ####
 ICU_outcome <- read_csv("L:/Auditdata/CONNECT-ME/Nikolai/pupillometry/Data/ICU_outcome.csv", show_col_types = FALSE)
+ICU_outcome <- ICU_outcome %>% select(-...1)
+
 
 run_day_clustering <- function(day,
                                input_dir  = load_path,
@@ -51,10 +56,7 @@ run_day_clustering <- function(day,
   clustered_data <- data.frame(
     Eye = colnames(left_eye_data)[-1],
     Cluster = clusters
-  ) %>%
-    mutate(Eye = as.numeric(Eye))
-  
-  stopifnot(!any(is.na(clustered_data$Eye)))
+  )
   
   
   
@@ -133,77 +135,163 @@ run_day_clustering <- function(day,
     silhouette = sil
   ))
 }
-results <- lapply(1:3, run_day_clustering)
+results <- lapply(1:14, run_day_clustering)
 
-library(dplyr)
-library(purrr)
+
+# ============================================================
+# Build longitudinal cluster trajectories
+# ============================================================
+
+n_days <- length(results)
 
 cluster_long <- map2_dfr(
   results,
-  1:3,
+  seq_len(n_days),
   ~ .x$clusters %>%
     mutate(Day = .y) %>%
     rename(record_id = Eye)
-)
-
-cluster_long <- cluster_long %>%
-  left_join(ICU_outcome, by = "record_id")
-
-
-last_day <- cluster_long %>%
-  group_by(record_id) %>%
-  summarise(last_day = max(Day), .groups = "drop")
-
-cluster_long <- cluster_long %>%
-  left_join(last_day, by = "record_id")
-
-cluster_long <- cluster_long %>%
+) %>%
   mutate(
-    State = paste0("C", Cluster),
-    State = ifelse(
-      Day < last_day,
-      State,
-      ifelse(ICU_outcome == "D", "Dead", "Survived")
-    )
+    record_id = as.numeric(record_id),
+    State     = paste0("C", Cluster)
   )
 
-library(tidyr)
-
+# ------------------------------------------------------------
+# Wide format (per-patient timeline)
+# ------------------------------------------------------------
 cluster_wide <- cluster_long %>%
   select(record_id, Day, State) %>%
   pivot_wider(
-    names_from  = Day,
-    values_from = State,
+    names_from   = Day,
+    values_from  = State,
     names_prefix = "Day"
   ) %>%
-  mutate(Freq = 1)
+  left_join(ICU_outcome, by = "record_id") %>%
+  filter(!is.na(Day1))
 
-library(ggalluvial)
-library(ggplot2)
+day_cols <- paste0("Day", seq_len(n_days))
+
+# Fill forward to handle isolated missing days
+cluster_wide <- cluster_wide %>%
+  arrange(record_id) %>%
+  group_by(record_id) %>%
+  tidyr::fill(all_of(day_cols), .direction = "down") %>%
+  ungroup()
+
+# ------------------------------------------------------------
+# Absorbing outcome logic
+# ------------------------------------------------------------
+absorb_outcome <- function(states, outcome) {
+  na_runs <- rle(is.na(states))
+  ends    <- cumsum(na_runs$lengths)
+  starts  <- ends - na_runs$lengths + 1
+  
+  idx <- which(na_runs$values & na_runs$lengths >= 2)[1]
+  
+  if (!is.na(idx) && !is.na(outcome)) {
+    absorb_pos <- starts[idx]
+    states[absorb_pos] <- ifelse(outcome == 1, "Survived", "Dead")
+    states[(absorb_pos + 1):length(states)] <- NA
+  }
+  
+  states
+}
+
+cluster_wide_absorbed <- cluster_wide %>%
+  rowwise() %>%
+  mutate(
+    new_states = list(
+      absorb_outcome(
+        c_across(all_of(day_cols)),
+        ICU_outcome
+      )
+    )
+  ) %>%
+  ungroup() %>%
+  select(record_id, new_states) %>%
+  tidyr::unnest_wider(new_states, names_sep = "")
+
+
+colnames(cluster_wide_absorbed)[-1] <- day_cols
+
+# ------------------------------------------------------------
+# Back to long format (CRITICAL STEP)
+# ------------------------------------------------------------
+cluster_long_final <- cluster_wide_absorbed %>%
+  pivot_longer(
+    cols      = all_of(day_cols),
+    names_to  = "Day",
+    values_to = "State"
+  ) %>%
+  mutate(
+    Day = as.integer(sub("Day", "", Day))
+  )
+
+# ------------------------------------------------------------
+# Enforce absorbing states (truncate trajectories)
+# ------------------------------------------------------------
+terminal_day <- cluster_long_final %>%
+  filter(State %in% c("Dead", "Survived")) %>%
+  group_by(record_id) %>%
+  summarise(terminal_day = min(Day), .groups = "drop")
+
+cluster_long_final <- cluster_long_final %>%
+  left_join(terminal_day, by = "record_id") %>%
+  filter(is.na(terminal_day) | Day <= terminal_day) %>%
+  select(-terminal_day) %>%
+  filter(!is.na(State))   # <- ESSENTIAL for ggalluvial
+
+alluvial_long <- cluster_long_final %>%
+  mutate(
+    Day = factor(Day, levels = seq_len(n_days)),
+    axis = paste0("Day", Day)
+  )
+
+# ============================================================
+# Sankey / Alluvial plot
+# ============================================================
+
+state_colors <- c(
+  "C1" = "#4E79A7",   # muted blue
+  "C2" = "#59A14F",   # muted green
+  "C3" = "#F28E2B",   # muted orange
+  "Dead" = "#E15759", # soft red
+  "Survived" = "#76B7B2" # teal
+)
 
 ggplot(
-  cluster_wide,
+  alluvial_long,
   aes(
-    axis1 = Day1,
-    axis2 = Day2,
-    axis3 = Day3,
-    y = Freq
+    x        = Day,
+    stratum  = State,
+    alluvium = record_id,
+    y        = 1,
+    fill     = State
   )
 ) +
-  geom_alluvium(aes(fill = Day1), alpha = 0.7, width = 0.2) +
-  geom_stratum(width = 0.25, color = "grey30") +
+  geom_flow(alpha = 0.65, width = 0.25) +
+  geom_stratum(color = "grey30", width = 0.3) +
   geom_text(
     stat = "stratum",
     aes(label = after_stat(stratum)),
-    size = 3
+    size = 2.5
   ) +
+  scale_fill_manual(values = state_colors) +
   scale_x_discrete(
-    limits = c("Day 1", "Day 2", "Day 3"),
+    limits = as.character(seq_len(n_days)),
+    labels = paste("Day", seq_len(n_days)),
     expand = c(.05, .05)
   ) +
   labs(
-    x = "ICU Day",
-    y = "Number of patients",
-    fill = "Initial cluster"
+    x    = "ICU timeline",
+    y    = "Number of patients",
+    fill = "State"
   ) +
-  theme_minimal(base_size = 11)
+  theme_minimal(base_size = 11) +
+  theme(
+    panel.grid.major.x = element_blank(),
+    panel.grid.minor   = element_blank(),
+    legend.position    = "right"
+  )
+
+
