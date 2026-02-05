@@ -119,6 +119,19 @@ run_day_clustering <- function(day,
   # -----------------------------
   sil <- silhouette(clusters, as.dist(dtw_dist))
   
+  # Convert sil to to dataframe to allow saving
+  sil_df <- as.data.frame(sil)
+  
+  # Return mean SC per cluster
+  cluster_sc <- sil_df %>%
+    group_by(cluster) %>%
+    summarise(
+      mean_SC = mean(sil_width),
+      n = n(),
+      .groups = "drop"
+    ) %>%
+    mutate(Day = day)
+  
   fig_sil <- fviz_silhouette(sil) +
     labs(title = paste("Day", day, "– Silhouette"))
   
@@ -132,12 +145,15 @@ run_day_clustering <- function(day,
   invisible(list(
     hc = hc,
     clusters = clustered_data,
-    silhouette = sil
+    silhouette = sil,
+    cluster_sc = cluster_sc
   ))
 }
-results <- lapply(1:13, run_day_clustering)
+results <- lapply(1:2, run_day_clustering)
 
-
+all_cluster_sc <- bind_rows(
+  lapply(results, function(x) x$cluster_sc)
+)
 # ============================================================
 # Build longitudinal cluster trajectories
 # ============================================================
@@ -255,11 +271,11 @@ alluvial_long <- cluster_long_final %>%
 # ============================================================
 
 state_colors <- c(
-  "C1" = "#4E79A7",   # muted blue
-  "C2" = "#59A14F",   # muted green
-  "C3" = "#F28E2B",   # muted orange
-  "Dead" = "#E15759", # soft red
-  "Survived" = "#76B7B2" # teal
+  "C1" = "red",   # muted blue
+  "C2" = "green",   # muted green
+  "C3" = "blue",   # muted orange
+  "Dead" = "#000", # black
+  "Survived" = "#FFFFFF" # White
 )
 
 ggplot(
@@ -424,13 +440,13 @@ alluvial_long_accum <- alluvial_long_accum %>%
 #   – no shadows for Dead→Dead / Survived→Survived
 # ============================================================
 
+
 state_colors <- c(
-  "C1" = "#4E79A7",
-  "C2" = "#59A14F",
-  "C3" = "#F28E2B",
-  "Died" = "#E15759",
-  "Survived" = "#76B7B2",
-  "Not observed" = "grey85"
+  "C1" = "red",   # muted blue
+  "C2" = "green",   # muted green
+  "C3" = "blue",   # muted orange
+  "Died" = "#000", # black
+  "Survived" = "#FFFFFF" # White
 )
 
 ggplot(
