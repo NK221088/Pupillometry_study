@@ -1,15 +1,15 @@
 import sys
 import os
-
-# Add the project root (one folder up) to Python's module search path
-sys.path.append(os.path.dirname(os.path.dirname(__file__)))
-
 from Data_loading.read_data import patient_left_individual_raw_data, patient_left_individual_text_data
-
 from Data_loading.read_NPi_data import NPI_data_cleaned
 import numpy as np
 import pandas as pd
 from dotenv import load_dotenv
+
+# Add the project root (one folder up) to Python's module search path
+sys.path.append(os.path.dirname(os.path.dirname(__file__)))
+
+
 
 load_dotenv()
 day_save_path = os.getenv("save_path_day_data")
