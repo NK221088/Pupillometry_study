@@ -22,39 +22,20 @@ HC_right_data = pd.read_excel(HC_right_path, index_col=0, sheet_name=None)
 #######################################################################################################################################################
 
 HC_left_data = pd.read_excel(HC_left_path, index_col=0, header=2, sheet_name="Ark1")
-HC_left_closest_timestamp_LOR_early_start_time = {sheet_name: np.argmin(np.abs((np.array([idx for idx in HC_left_data[sheet_name].index if isinstance(idx, (int, float))]) - LOR_early_start_time))) for sheet_name in HC_left_data.keys()} # Find the time index closest to LOR early start time
 HC_left_text_data = pd.read_excel(HC_left_path, index_col=0, header=None, nrows=2)
-HC_left_numeric_data = {sheet_name: HC_left_data[sheet_name].iloc[HC_left_zero_indices[sheet_name]:].apply(pd.to_numeric, errors='coerce') for sheet_name in HC_left_data.keys()}
 
-all_HC_IDs = HC_left_data.columns
+HC_left_data_individual_raw_data = {HC_id: HC_left_data[HC_id] for HC_id in HC_left_data.columns}
+HC_left_data_individual_raw_data = {HC_id: HC_left_text_data[HC_id] for HC_id in HC_left_text_data.columns}
 
-HC_left_numeric_data = {
-    i: value
-    for i, value in enumerate(HC_left_numeric_data.values(), start=1)
-}
-HC_left_text_data = {
-    i: value
-    for i, value in enumerate(HC_left_text_data.values(), start=1)
-}
+#######################################################################################################################################################
+# HCs right
+#######################################################################################################################################################
 
+HC_right_data = pd.read_excel(HC_right_path, index_col=0, header=2, sheet_name="Ark1")
+HC_right_text_data = pd.read_excel(HC_right_path, index_col=0, header=None, nrows=2)
 
-
-HC_left_data_raw_values = {sheet_name: HC_left_numeric_data[sheet_name] for sheet_name in HC_left_data.keys()}
-
-HC_left_data_individual_raw_data = {patient_id: pd.concat([
-    HC_left_data_raw_values[sheet_name][patient_id] if patient_id in HC_left_data_raw_values[sheet_name].columns else pd.Series(dtype='float64')
-    for sheet_name in HC_left_data.keys()
-    ], axis=1, keys=HC_left_data.keys()) for patient_id in all_patient_ids}
-
-# patient_left_individual_text_data = {patient_id: pd.concat([
-#     patient_left_text_data[sheet_name][patient_id] if patient_id in patient_left_text_data[sheet_name].columns else pd.Series(dtype='float64')
-#     for sheet_name in patient_left_text_data.keys()
-#     ], axis=1, keys=patient_left_text_data.keys()) for patient_id in all_patient_ids}
-
-# patient_left_individual_text_data = {patient_id: pd.concat([
-#     patient_left_text_data[sheet_name][patient_id] if patient_id in patient_left_text_data[sheet_name].columns else pd.Series(dtype='float64')
-#     for sheet_name in patient_left_text_data.keys()
-#     ], axis=1, keys=patient_left_text_data.keys()) for patient_id in all_patient_ids}
+HC_right_data_individual_raw_data = {HC_id: HC_right_data[HC_id] for HC_id in HC_right_data.columns}
+HC_right_data_individual_raw_data = {HC_id: HC_right_text_data[HC_id] for HC_id in HC_right_text_data.columns}
 
 #######################################################################################################################################################
 # Patient left
@@ -83,28 +64,6 @@ patient_left_text_data = {
 }
 
 patient_left_raw_values = {sheet_name: patient_left_numeric_data[sheet_name] for sheet_name in patient_left_data.keys()}
-
-patient_left_etiology_metrics = {
-    patient_id: list(map(int, re.findall(r"\d+", str(
-        patient_left_data[list(patient_left_data.keys())[0]][patient_id]
-        .loc["Etiology"]
-    ))))
-    for patient_id in patient_left_data[list(patient_left_data.keys())[0]].columns
-}
-
-patient_left_sedation_metrics = {
-    day:
-    {patient_id: str(patient_left_data[day][patient_id].loc["Sedation"]).split(",")
-    for patient_id in patient_left_data[day].columns}
-    for day in patient_left_data.keys()
-}
-
-patient_left_consciousness_metrics = {
-    day:
-    {patient_id: patient_left_data[day][patient_id].loc["SECONDS"]
-    for patient_id in patient_left_data[day].columns}
-    for day in patient_left_data.keys()
-}
 
 patient_left_individual_raw_data = {patient_id: pd.concat([
     patient_left_raw_values[sheet_name][patient_id] if patient_id in patient_left_raw_values[sheet_name].columns else pd.Series(dtype='float64')
@@ -142,28 +101,6 @@ patient_right_numeric_data = {
 patient_right_text_data = {
     i: value
     for i, value in enumerate(patient_right_text_data.values(), start=1)
-}
-
-patient_right_etiology_metrics = {
-    patient_id: list(map(int, re.findall(r"\d+", str(
-        patient_right_data[list(patient_right_data.keys())[0]][patient_id]
-        .loc["Etiology"]
-    ))))
-    for patient_id in patient_right_data[list(patient_right_data.keys())[0]].columns
-}
-
-patient_right_sedation_metrics = {
-    day:
-    {patient_id: str(patient_right_data[day][patient_id].loc["Sedation"]).split(",")
-    for patient_id in patient_right_data[day].columns}
-    for day in patient_right_data.keys()
-}
-
-patient_right_consciousness_metrics = {
-    day:
-    {patient_id: patient_right_data[day][patient_id].loc["SECONDS"]
-    for patient_id in patient_right_data[day].columns}
-    for day in patient_right_data.keys()
 }
 
 patient_right_raw_values = {sheet_name: patient_right_numeric_data[sheet_name] for sheet_name in patient_right_data.keys()}
