@@ -1,7 +1,7 @@
 import sys
 import os
-from Data_loading.read_data import patient_left_individual_raw_data, patient_left_individual_text_data
-from Data_loading.read_NPi_data import NPI_data_cleaned
+from read_data import patient_left_individual_raw_data, patient_left_individual_text_data
+from read_NPi_data import NPI_data_cleaned
 import numpy as np
 import pandas as pd
 from dotenv import load_dotenv
@@ -225,16 +225,6 @@ ICU_outcome = {
     for record_id, df in patient_left_individual_text_data.items()
     if "Outcome at ICU" in df.index
 }
-
-# df_outcome = (
-#     pd.DataFrame.from_dict(
-#         ICU_outcome,
-#         orient="index",
-#         columns=["ICU_outcome"],
-#     )
-#     .reset_index()
-#     .rename(columns={"index": "record_id"})
-# )
 
 df_outcome = pd.read_csv(rf"L:\Auditdata\CONNECT-ME\Nikolai\pupillometry\Data\ICU_outcome_redcap.csv")
 df_outcome = df_outcome[:252][["record_id", "location_death"]]

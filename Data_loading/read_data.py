@@ -154,5 +154,3 @@ for patient_id in all_patient_ids:
         patient_right_individual_text_data[patient_id]
         .loc[:, visit_order]
     )
-
-print("debug")

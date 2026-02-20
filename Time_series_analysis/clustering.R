@@ -132,8 +132,22 @@ run_day_clustering <- function(day,
     ) %>%
     mutate(Day = day)
   
+  # Compute overall mean SC
+  overall_sc <- mean(sil_df$sil_width)
+  
+  cluster_text <- cluster_sc %>%
+    mutate(label = paste0("Cluster ", cluster,
+                          ": mean = ",
+                          round(mean_SC, 2)))
+  cluster_label_text <- paste(cluster_text$label, collapse = "   |   ")
+  
   fig_sil <- fviz_silhouette(sil) +
-    labs(title = paste("Day", day, "– Silhouette"))
+    labs(
+      title = paste("Day", day, "– Silhouette"),
+      subtitle = paste("Overall mean silhouette:",
+                       round(overall_sc, 2)),
+      caption = cluster_label_text
+    )
   
   ggsave(
     filename = file.path(output_dir,
@@ -149,7 +163,7 @@ run_day_clustering <- function(day,
     cluster_sc = cluster_sc
   ))
 }
-results <- lapply(1:2, run_day_clustering)
+results <- lapply(1:13, run_day_clustering)
 
 all_cluster_sc <- bind_rows(
   lapply(results, function(x) x$cluster_sc)
@@ -490,5 +504,7 @@ ggplot(
 
 ggsave(
   paste0(save_path, "/Sankey_all_days.png"),
+  width = 14,
+  height = 6,
   dpi = 600
 )
