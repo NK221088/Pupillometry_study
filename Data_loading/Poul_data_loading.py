@@ -1,6 +1,12 @@
-import os
 import numpy as np
 import pandas as pd
+
+import os
+from dotenv import load_dotenv
+from pathlib import Path
+
+load_dotenv()
+path = Path(os.getenv(rf"Pouls_data_path"))
 
 def interpolate_zeros(row):
     s = row.copy().values.astype(float)
@@ -14,7 +20,6 @@ def interpolate_zeros(row):
     result[artifact] = np.nan
     return pd.Series(result).interpolate(method='linear').values
 
-path = r"L:\Auditdata\CONNECT-ME\Pupillometry to detect covert awareness\Pupillometridata\CSV_format"
 all_files = [os.path.join(path, f) for f in sorted(os.listdir(path)) if f.startswith("R")]
 
 dfs = []
