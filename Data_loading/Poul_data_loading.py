@@ -7,6 +7,7 @@ from pathlib import Path
 
 load_dotenv()
 path = Path(os.getenv(rf"Pouls_data_path"))
+save_path = Path(os.getenv(rf"Pouls_save_path"))
 
 def interpolate_zeros(row):
     s = row.copy().values.astype(float)
@@ -30,12 +31,23 @@ for file in all_files:
     columns_to_keep = ['DateTime', 'PatientID', 'Pupil-Measured'] + list(df.columns[24:803])
     df = df[columns_to_keep]
     ts_cols = list(df.columns[3:])
+    len_before = len(df)
+    df = df[df["PatientID"].astype(str).str.split(".").str[0].str.match(r"^\d+$")]
     df['PatientID'] = df['PatientID'].astype(int)
+    df = df[df["PatientID"].astype(str).str.len() > 6]
+    df["PatientID"] = df["PatientID"].astype(str).str.zfill(10)
+    print(f"Discarded {len_before - len(df)} rows with non-numeric PatientID in file: {file.split('\\')[-1]}")
     df[ts_cols] = df[ts_cols].astype(float)
     df[ts_cols] = df[ts_cols].apply(interpolate_zeros, axis=1, result_type='expand')
+    len_before = len(df)
     df = df.drop_duplicates(subset=['DateTime', 'PatientID', 'Pupil-Measured'], keep='first')
+    print(f"Discarded {len_before - len(df)} duplicate rows in file: {file.split('\\')[-1]}")
     dfs.append(df)
 
 df_all = pd.concat(dfs, ignore_index=True)
+df_all_len_before = len(df_all)
 df_all = df_all.drop_duplicates(subset=['DateTime', 'PatientID', 'Pupil-Measured'], keep='first')
-print("debug")
+print(f"Discarded {df_all_len_before - len(df_all)} duplicate rows across all files.")
+df_dates = df_all["DateTime"].str.replace("-", "/").str.split(" ")
+df_all["DateTime"] = df_dates.str[0].str[:6] + df_dates.str[0].str.split("/").str[-1].str[-2:] + " " + df_all["DateTime"].str.replace("-", "/").str.split(" ").str[-1]
+df_all.to_excel(os.path.join(save_path, "Poul_data_cleaned.xlsx"), index=False)
