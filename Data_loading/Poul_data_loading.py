@@ -38,7 +38,7 @@ for file in all_files:
     df["PatientID"] = df["PatientID"].astype(str).str.zfill(10)
     print(f"Discarded {len_before - len(df)} rows with non-numeric PatientID in file: {file.split('\\')[-1]}")
     df[ts_cols] = df[ts_cols].astype(float)
-    df[ts_cols] = df[ts_cols].apply(interpolate_zeros, axis=1, result_type='expand')
+    df[ts_cols] = df[ts_cols].apply(interpolate_zeros, axis=1, result_type='expand').round(2)
     len_before = len(df)
     df = df.drop_duplicates(subset=['DateTime', 'PatientID', 'Pupil-Measured'], keep='first')
     print(f"Discarded {len_before - len(df)} duplicate rows in file: {file.split('\\')[-1]}")
