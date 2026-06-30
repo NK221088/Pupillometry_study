@@ -37,20 +37,27 @@ for file in all_files:
     df = df[df["PatientID"].astype(str).str.len() > 6]
     df["PatientID"] = df["PatientID"].astype(str).str.zfill(10)
     print(f"Discarded {len_before - len(df)} rows with non-numeric PatientID in file: {file.split('\\')[-1]}")
-    df[ts_cols] = df[ts_cols].astype(float)
-    df[ts_cols] = df[ts_cols].apply(interpolate_zeros, axis=1, result_type='expand').round(2)
+
     len_before = len(df)
+    df[ts_cols] = df[ts_cols].astype(float)
     df = df[df[ts_cols].iloc[:, :8].max(axis=1) > 0]
     print(f"Discarded {len_before - len(df)} rows due to all first 8 values being zero in file: {file.split('\\')[-1]}")
+
+    df[ts_cols] = df[ts_cols].apply(interpolate_zeros, axis=1, result_type='expand').round(2)
+
     len_before = len(df)
     df = df.drop_duplicates(subset=['DateTime', 'PatientID', 'Pupil-Measured'], keep='first')
     print(f"Discarded {len_before - len(df)} duplicate rows in file: {file.split('\\')[-1]}")
     dfs.append(df)
 
 df_all = pd.concat(dfs, ignore_index=True)
+
+# Make sure all dates are same format. OBS. Some measurements have seconds, those are kept.
+df_dates = df_all["DateTime"].str.replace("-", "/").str.split(" ")
+df_all["DateTime"] = df_dates.str[0].str[:6] + df_dates.str[0].str.split("/").str[-1].str[-2:] + " " + df_all["DateTime"].str.replace("-", "/").str.split(" ").str[-1]
+
 df_all_len_before = len(df_all)
 df_all = df_all.drop_duplicates(subset=['DateTime', 'PatientID', 'Pupil-Measured'], keep='first')
 print(f"Discarded {df_all_len_before - len(df_all)} duplicate rows across all files.")
-df_dates = df_all["DateTime"].str.replace("-", "/").str.split(" ")
-df_all["DateTime"] = df_dates.str[0].str[:6] + df_dates.str[0].str.split("/").str[-1].str[-2:] + " " + df_all["DateTime"].str.replace("-", "/").str.split(" ").str[-1]
+
 df_all.to_excel(os.path.join(save_path, "Poul_data_cleaned.xlsx"), index=False)
