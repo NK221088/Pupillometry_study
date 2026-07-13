@@ -28,9 +28,9 @@ for file in all_files:
     print(f"Processing: {file}")
     df = pd.read_csv(file, sep='\t', skiprows=1, low_memory=False)
     df = df[df["Protocol-Type"] == "PLR-Positive"]
-    columns_to_keep = ['DateTime', 'PatientID', 'Pupil-Measured'] + list(df.columns[24:803])
+    columns_to_keep = ['DateTime', 'PatientID', 'Pupil-Measured'] + list(df.columns[24:804])
     df = df[columns_to_keep]
-    ts_cols = list(df.columns[3:])
+    ts_cols = list(df.columns[3:393])
     len_before = len(df)
     df = df[df["PatientID"].astype(str).str.split(".").str[0].str.match(r"^\d+$")]
     df['PatientID'] = df['PatientID'].astype(int)
