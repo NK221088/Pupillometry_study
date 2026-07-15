@@ -1,0 +1,10 @@
+Complexity,Loss,Equation
+1,0.646074,"4.0314913"
+3,0.3452952,"6.460354 - pupil_min"
+4,0.34327054,"abs(6.454345 - pupil_min)"
+5,0.26589856,"4.828845 - square(log(pupil_min))"
+6,0.1058409,"5.976132 - (square(pupil_min) / pupil_size)"
+7,0.08643187,"(pupil_size + 5.705815) - (pupil_min * 1.9630997)"
+8,0.058238342,"6.65689 - (square(pupil_min) / (pupil_size + -0.72703034))"
+9,0.053746644,"abs((square(pupil_min) / (pupil_size + -0.72252685)) - 6.644081)"
+10,0.052270945,"6.101285 - (square(pupil_min + -0.46839195) / (pupil_size + -1.094489))"

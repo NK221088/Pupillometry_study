@@ -1,0 +1,10 @@
+Complexity,Loss,Equation
+1,1.0939143,"1.6966805"
+3,0.5336139,"4.125466 - pupil_min"
+4,0.26334593,"sqrt(ch) / pupil_min"
+5,0.24540792,"(ch / pupil_size) * 0.26382068"
+6,0.14164238,"(log(ch) + 1.358938) - pupil_min"
+7,0.11523134,"sqrt(ch / pupil_min) - log(pupil_size)"
+8,0.09194485,"sqrt(ch / pupil_min) - (0.35974702 * pupil_size)"
+9,0.09075933,"(pupil_size * -0.7619379) + ((ch / 10.85267) + 2.2557356)"
+10,0.07551738,"(sqrt(ch / pupil_min) - square(log(pupil_min))) * 0.83047175"
